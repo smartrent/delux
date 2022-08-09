@@ -118,9 +118,8 @@ defmodule Delux.Morse do
     words = String.split(string)
 
     for word <- words do
-      morse_word(word, dot_ms)
+      [morse_word(word, dot_ms), {0, word_ms}, {0, 0}]
     end
-    |> Enum.intersperse([{0, word_ms}, {0, 0}])
     |> List.flatten()
   end
 
