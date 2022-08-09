@@ -238,13 +238,13 @@ defmodule Delux do
       merged_indicators = merge_indicator_program(Map.get(state.active, priority), indicators)
 
       new_active = Map.put(state.active, priority, merged_indicators)
-      new_timers = start_timer(state.timers, priority, merged_indicators)
-
-      new_state = %{state | active: new_active, timers: new_timers}
+      new_state = %{state | active: new_active}
 
       refresh_indicators(new_state)
 
-      {:ok, new_state}
+      new_timers = start_timer(state.timers, priority, merged_indicators)
+
+      {:ok, %{new_state | timers: new_timers}}
     end
   end
 
