@@ -192,10 +192,14 @@ to have `CONFIG_LEDS_TRIGGER_PATTERN=y` enabled your Linux kernel configuration.
 
 The second step to using Linux's LED subsystem is to configure LEDs in the
 device tree. You can't just use an arbitrary GPIO to turn on the LED like you
-can with `Circuits.GPIO`. The device tree updates require one section that tells
-the Linux LED subsystem about the GPIOs to use and another section that
-configures the pinmux settings so that the GPIOs are outputs. The following
-shows a setup with two RGB LEDs where one is set to blink on initialization:
+can with `Circuits.GPIO`. Linux needs to know about the GPIO. It's also possible
+to hook up PWMs and LED drivers. See the [LED
+drivers](https://elixir.bootlin.com/linux/latest/source/drivers/leds) for
+options.
+
+The following is an example device tree configuration for telling Linux about
+GPIO-connected LEDs. It is platform-specific so you can't just copy/paste it.
+It sets up two RGB LEDs and makes one blink early in the boot process.
 
 ```dts
 / {
