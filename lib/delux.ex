@@ -12,6 +12,9 @@ defmodule Delux do
   @default_priorities [:status, :notification, :user_feedback]
 
   @default_indicator :default
+  @default_indicator_config %{default: %{}}
+
+  @default_led_path "/sys/class/leds"
 
   @typedoc """
   Priority of an indicator program
@@ -168,8 +171,8 @@ defmodule Delux do
   @impl GenServer
   def init(options) do
     priorities = options[:priorities] || @default_priorities
-    indicator_configs = options[:indicators]
-    led_path = options[:led_path] || "/sys/class/leds"
+    indicator_configs = options[:indicators] || @default_indicator_config
+    led_path = options[:led_path] || @default_led_path
 
     off = Effects.off()
     all_off = for {name, _config} <- indicator_configs, do: {name, off}

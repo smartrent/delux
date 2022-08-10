@@ -3,6 +3,13 @@ defmodule DeluxTest do
 
   alias Delux.Support.FakeLEDs
 
+  test "starting Delux with an empty config" do
+    # This is useful for projects that have LEDs on some devices, but not on others.
+    pid = start_supervised!(Delux)
+
+    Delux.render(pid, Delux.Effects.blink(:green, 2))
+  end
+
   @tag :tmp_dir
   test "single LED configuration", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
