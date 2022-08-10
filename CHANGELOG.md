@@ -1,5 +1,15 @@
 # Changelog
 
-## v0.1.0 - 08-08-2022
+## v0.1.1 - 2022-08-10
+
+* Changes
+  * Adjust timed pattern playback to minimize trimming LED programs.
+    Unfortunately, LED programs still get cut off at the end with this release.
+    If you're using Morse code, you'll see this. We plan on fixing this
+    completely in a future release.
+  * Support empty LED setups to simplify configuration of multi-target projects
+    and unit tests.
+
+## v0.1.0 - 2022-08-08
 
 Initial release
