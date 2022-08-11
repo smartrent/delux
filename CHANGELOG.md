@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2 - 2022-08-11
+
+* Changes
+  * Improve `Delux.Effects.waveform/3` so that it's easier to use and produces
+    shorter patterns. It now has examples in the docs and unit tests.
+
 ## v0.1.1 - 2022-08-10
 
 * Changes
