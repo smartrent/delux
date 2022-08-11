@@ -132,7 +132,7 @@ defmodule Delux.Effects do
           Program.t()
   def waveform(fun, period, options \\ []) do
     time_step = options[:time_step] || 100
-    colors = for t <- 0..period//time_step, do: fun.(t)
+    colors = for t <- 0..period//time_step, do: RGB.new(fun.(t))
     {reds, greens, blues} = unzip3(colors)
 
     %Program{

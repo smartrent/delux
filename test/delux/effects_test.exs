@@ -134,5 +134,27 @@ defmodule Delux.EffectsTest do
       assert p.red == [{0, 2000}, {0, 0}]
       assert p.green == [{0, 2000}, {0, 0}]
     end
+
+    test "cycling color names" do
+      p =
+        Effects.waveform(
+          fn t ->
+            case div(rem(t, 300), 100) do
+              0 -> :red
+              1 -> :green
+              2 -> :blue
+            end
+          end,
+          300
+        )
+
+      assert p.red == [{1, 100}, {0, 100}, {0, 100}, {1, 0}]
+      assert p.green == [{0, 100}, {1, 100}, {0, 100}, {0, 0}]
+      assert p.blue == [{0, 100}, {0, 100}, {1, 100}, {0, 0}]
+    end
+
+    test "catching bad RGB values" do
+      assert_raise FunctionClauseError, fn -> Effects.waveform(fn _ -> {2, 0, 0} end, 1000) end
+    end
   end
 end
