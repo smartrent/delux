@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.3 - 2022-08-11
+
+* Changes
+  * Fix typespecs to remove warnings found by Dialyzer
+  * Update `Delux.Effects.waveform/3` to support color atom names and check RGB
+    tuples for range. The latter fixes errors that get detected later on and are
+    more confusing to figure out.
+
 ## v0.1.2 - 2022-08-11
 
 * Changes
