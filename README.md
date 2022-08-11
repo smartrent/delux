@@ -197,6 +197,11 @@ to hook up PWMs and LED drivers. See the [LED
 drivers](https://elixir.bootlin.com/linux/latest/source/drivers/leds) for
 options.
 
+> #### Tip {: .tip}
+>
+> If you're using a BeagleBone, check out
+> [Udo Schneider's blog post on device tree overlays](https://pubray.com/udo-schneider/custom-device-tree-overlays-for-beagle-bone-black-running-nerves)
+
 The following is an example device tree configuration for telling Linux about
 GPIO-connected LEDs. It is platform-specific so you can't just copy/paste it.
 It sets up two RGB LEDs and makes one blink early in the boot process.
