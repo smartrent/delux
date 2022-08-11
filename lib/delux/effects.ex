@@ -3,6 +3,7 @@ defmodule Delux.Effects do
   Functions for creating a variety of LED patterns
   """
 
+  alias Delux.Pattern
   alias Delux.Program
   alias Delux.RGB
 
@@ -113,17 +114,30 @@ defmodule Delux.Effects do
 
   Pass in a function that takes times in milliseconds and returns colors. The
   returned pattern piecewise linearly interpolates the waveform.
+
+  Here's an example of a 0.5 Hz blue sine wave:
+
+  ```elixir
+  Effects.waveform(fn t -> {0, 0, 0.5 + 0.5 *:math.cos(:math.pi() * t /  1000)} end, 2000)
+  ```
+
+  When trying this, keep in mind that if the LEDs in the indicator don't support
+  varying levels of brightness, it won't look like a sine wave.
+
+  Options
+
+  * `:time_step` - the number of milliseconds between each sample. Defaults to 100 ms.
   """
-  @spec waveform(fun(), non_neg_integer(), options()) :: Program.t()
+  @spec waveform(fun(), non_neg_integer(), keyword()) :: Program.t()
   def waveform(fun, period, options \\ []) do
-    time_step = 100
-    colors = for t <- 0..period//time_step, do: fun.(t, options)
+    time_step = options[:time_step] || 100
+    colors = for t <- 0..period//time_step, do: fun.(t)
     {reds, greens, blues} = unzip3(colors)
 
     %Program{
-      red: led_waveform(reds, time_step),
-      green: led_waveform(greens, time_step),
-      blue: led_waveform(blues, time_step),
+      red: led_waveform(reds, time_step, period),
+      green: led_waveform(greens, time_step, period),
+      blue: led_waveform(blues, time_step, period),
       description: "waveform",
       duration: :infinity
     }
@@ -153,7 +167,13 @@ defmodule Delux.Effects do
     Enum.flat_map(values, fn b -> [{b, duration}, {b, 0}] end)
   end
 
-  defp led_waveform(values, time_step) do
-    Enum.map(values, fn v -> {v, time_step} end)
+  defp led_waveform(values, time_step, total_time) do
+    {result, 0} =
+      Enum.map_reduce(values, total_time, fn v, time_left ->
+        time = min(time_step, time_left)
+        {{v, time}, time_left - time}
+      end)
+
+    Pattern.simplify(result)
   end
 end

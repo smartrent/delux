@@ -108,6 +108,31 @@ defmodule Delux.EffectsTest do
   end
 
   describe "waveform/2" do
-    # TODO
+    test "blue sine wave" do
+      p =
+        Effects.waveform(
+          fn t -> {0, 0, 0.5 + 0.5 * :math.cos(:math.pi() * t / 1000)} end,
+          2000
+        )
+
+      # Step size of 100 ms means 21 points where the last one has zero length
+      assert length(p.blue) == 21
+      total_time = p.blue |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+      assert total_time == 2000
+
+      # Test that red and green get simplified down
+      assert p.red == [{0, 2000}, {0, 0}]
+      assert p.green == [{0, 2000}, {0, 0}]
+
+      assert p.duration == :infinity
+    end
+
+    test "triangle that uses time_step" do
+      p = Effects.waveform(fn t -> {0, 0, rem(t, 2000) / 1000} end, 2000, time_step: 1000)
+
+      assert p.blue == [{0.0, 1000}, {1.0, 1000}, {0.0, 0}]
+      assert p.red == [{0, 2000}, {0, 0}]
+      assert p.green == [{0, 2000}, {0, 0}]
+    end
   end
 end
