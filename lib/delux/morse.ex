@@ -71,7 +71,7 @@ defmodule Delux.Morse do
 
   * `:words_per_minute` - the rate at which to send the message
   """
-  @spec encode(RGB.t(), String.t(), options()) :: Program.t()
+  @spec encode(RGB.color(), String.t(), options()) :: Program.t()
   def encode(c, string, options \\ []) do
     {r, g, b} = RGB.new(c)
 

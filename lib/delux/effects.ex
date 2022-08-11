@@ -31,7 +31,7 @@ defmodule Delux.Effects do
   @doc """
   Set an indicator to the specified color
   """
-  @spec on(RGB.t(), options()) :: Program.t()
+  @spec on(RGB.color(), options()) :: Program.t()
   def on(c, _options \\ []) do
     {r, g, b} = RGB.new(c)
 
@@ -50,7 +50,7 @@ defmodule Delux.Effects do
   This returns a pattern that blinks the specified color at a 50% duty cycle.
   The pattern starts on and then goes off.
   """
-  @spec blink(RGB.t(), number(), options()) :: Program.t()
+  @spec blink(RGB.color(), number(), options()) :: Program.t()
   def blink(c, frequency, _options \\ []) do
     {r, g, b} = RGB.new(c)
 
@@ -70,7 +70,7 @@ defmodule Delux.Effects do
   20 ms. The Effects is a quick flash of light that can be used to show
   feedback to a button. Total duration of the Effects is 40 ms.
   """
-  @spec blip(RGB.t(), RGB.t(), options()) :: Program.t()
+  @spec blip(RGB.color(), RGB.color(), options()) :: Program.t()
   def blip(c1, c2, _options \\ []) do
     {r1, g1, b1} = RGB.new(c1)
     {r2, g2, b2} = RGB.new(c2)
@@ -89,7 +89,7 @@ defmodule Delux.Effects do
 
   Colors are shown with equal duration determined from the specified frequency.
   """
-  @spec cycle([RGB.t()], number(), options()) :: Program.t()
+  @spec cycle([RGB.color()], number(), options()) :: Program.t()
   def cycle(colors, frequency, _options \\ [])
       when is_list(colors) and frequency > 0 and frequency < 20 do
     {reds, greens, blues} = colors |> Enum.map(&RGB.new/1) |> unzip3()
@@ -128,7 +128,8 @@ defmodule Delux.Effects do
 
   * `:time_step` - the number of milliseconds between each sample. Defaults to 100 ms.
   """
-  @spec waveform(fun(), non_neg_integer(), keyword()) :: Program.t()
+  @spec waveform((Pattern.milliseconds() -> RGB.color()), Pattern.milliseconds(), keyword()) ::
+          Program.t()
   def waveform(fun, period, options \\ []) do
     time_step = options[:time_step] || 100
     colors = for t <- 0..period//time_step, do: fun.(t)

@@ -60,7 +60,7 @@ defmodule Delux.RGB do
   ["This is ", "{0, 0.5, 1}"]
   ```
   """
-  @spec to_ansidata(t(), String.t()) :: IO.ANSI.ansidata()
+  @spec to_ansidata(color(), String.t()) :: IO.ANSI.ansidata()
   def to_ansidata(color, prefix \\ "")
 
   def to_ansidata(:off, prefix), do: [:reverse, prefix, "off"]
