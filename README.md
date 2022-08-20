@@ -246,6 +246,12 @@ It sets up two RGB LEDs and makes one blink early in the boot process.
 };
 ```
 
+### Morse code
+
+Sending Morse code accurately requires a higher kernel timer resolution than
+what may ship in the stock Nerves system for your target. It is recommended to
+set `CONFIG_HZ_1000=y`.
+
 ## License
 
 ```text

@@ -34,13 +34,15 @@ defmodule Delux.MorseTest do
              {1, 180},
              {1, 0},
              {0, 420},
+             {0, 0},
+             {0, 420},
              {0, 0}
            ]
 
-    assert p.green == [{0, 1680}, {0, 0}]
-    assert p.blue == [{0, 1680}, {0, 0}]
+    assert p.green == [{0, 2100}, {0, 0}]
+    assert p.blue == [{0, 2100}, {0, 0}]
 
-    assert p.duration == 1680
+    assert p.duration == 2100
     assert Program.text_description(p) == "Morse code: TEST"
   end
 
@@ -48,7 +50,7 @@ defmodule Delux.MorseTest do
     p = Morse.encode(:green, "E E E", words_per_minute: 20)
 
     # .<word gap>.<word gap>.
-    assert p.red == [{0, 1440}, {0, 0}]
+    assert p.red == [{0, 1860}, {0, 0}]
 
     assert p.green == [
              {1, 60},
@@ -62,12 +64,14 @@ defmodule Delux.MorseTest do
              {1, 60},
              {1, 0},
              {0, 420},
+             {0, 0},
+             {0, 420},
              {0, 0}
            ]
 
-    assert p.blue == [{0, 1440}, {0, 0}]
+    assert p.blue == [{0, 1860}, {0, 0}]
 
-    assert p.duration == 1440
+    assert p.duration == 1860
     assert Program.text_description(p) == "Morse code: E E E"
   end
 end

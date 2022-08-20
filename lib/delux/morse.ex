@@ -120,6 +120,7 @@ defmodule Delux.Morse do
     for word <- words do
       [morse_word(word, dot_ms), {0, word_ms}, {0, 0}]
     end
+    |> List.insert_at(-1, [{0, word_ms}, {0, 0}])
     |> List.flatten()
   end
 
