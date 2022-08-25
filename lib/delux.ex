@@ -58,13 +58,13 @@ defmodule Delux do
   * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
   * `:priorities` - a list of priority atoms from lowest to highest. Defaults to `[:status, :notification, :user_feedback]`
   * `:indicators` - a map of indicator names to their configurations
-  * `:name` - if specified, this is passed to `GenServer.start_link/3` so register the name of the Delux GenServer
+  * `:name` - register the Delux GenServer using this name. Defaults to `Delux`. Specify `nil` to not register a name.
   """
   @type options() :: [
           led_path: String.t(),
           priorities: [priority()],
           indicators: %{indicator_name() => indicator_config()},
-          name: atom()
+          name: atom() | nil
         ]
 
   @doc """
@@ -74,7 +74,13 @@ defmodule Delux do
   """
   @spec start_link(options()) :: GenServer.on_start()
   def start_link(options) do
-    genserver_options = Keyword.take(options, [:name])
+    genserver_options =
+      case Keyword.fetch(options, :name) do
+        {:ok, nil} -> []
+        {:ok, name} -> [name: name]
+        :error -> [name: __MODULE__]
+      end
+
     GenServer.start_link(__MODULE__, options, genserver_options)
   end
 
@@ -89,7 +95,7 @@ defmodule Delux do
           %{indicator_name() => Program.t() | nil} | Program.t() | nil,
           priority()
         ) :: :ok
-  def render(server, program, priority \\ @default_priority)
+  def render(server \\ __MODULE__, program, priority \\ @default_priority)
 
   def render(server, %Program{} = program, priority) when is_atom(priority) do
     with {:error, reason} <-
@@ -117,7 +123,7 @@ defmodule Delux do
   turned off.
   """
   @spec clear(GenServer.server(), priority()) :: :ok
-  def clear(server, priority \\ @default_priority) when is_atom(priority) do
+  def clear(server \\ __MODULE__, priority \\ @default_priority) when is_atom(priority) do
     with {:error, reason} <- GenServer.call(server, {:clear, priority}) do
       raise reason
     end
@@ -131,7 +137,7 @@ defmodule Delux do
   NOTE: This is not fully supported yet!
   """
   @spec adjust_brightness(GenServer.server(), 0..100) :: :ok
-  def adjust_brightness(server, percent) when percent >= 0 and percent <= 100 do
+  def adjust_brightness(server \\ __MODULE__, percent) when percent >= 0 and percent <= 100 do
     GenServer.call(server, {:adjust_brightness, percent})
   end
 
@@ -142,7 +148,7 @@ defmodule Delux do
   users at the IEx prompt. For programmatic use, see `info_as_ansidata/2`.
   """
   @spec info(GenServer.server(), indicator_name()) :: IO.ANSI.ansidata()
-  def info(server, indicator \\ @default_indicator) do
+  def info(server \\ __MODULE__, indicator \\ @default_indicator) do
     info_as_ansidata(server, indicator) |> IO.ANSI.format() |> IO.puts()
   end
 
@@ -150,7 +156,7 @@ defmodule Delux do
   Return user-readable information about an indicator
   """
   @spec info_as_ansidata(GenServer.server(), indicator_name()) :: IO.ANSI.ansidata()
-  def info_as_ansidata(server, indicator \\ @default_indicator) do
+  def info_as_ansidata(server \\ __MODULE__, indicator \\ @default_indicator) do
     case GenServer.call(server, {:info, indicator}) do
       {:ok, result} -> result
       {:error, reason} -> raise reason

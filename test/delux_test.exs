@@ -5,7 +5,7 @@ defmodule DeluxTest do
 
   test "starting Delux with an empty config" do
     # This is useful for projects that have LEDs on some devices, but not on others.
-    pid = start_supervised!(Delux)
+    pid = start_supervised!({Delux, name: nil})
 
     Delux.render(pid, Delux.Effects.blink(:green, 2))
   end
@@ -14,7 +14,11 @@ defmodule DeluxTest do
   test "single LED configuration", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
-    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
+
     assert info_as_binary(pid) == "off"
 
     # Check initialized to off
@@ -39,7 +43,9 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         led_path: led_dir, indicators: %{default: %{red: "led0", green: "led1", blue: "led2"}}}
+         name: nil,
+         led_path: led_dir,
+         indicators: %{default: %{red: "led0", green: "led1", blue: "led2"}}}
       )
 
     assert info_as_binary(pid) == "off"
@@ -68,7 +74,11 @@ defmodule DeluxTest do
   test "priorities", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
-    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
+
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
     assert info_as_binary(pid) == "off"
 
@@ -102,7 +112,11 @@ defmodule DeluxTest do
   test "timed programs", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
-    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
+
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
     assert info_as_binary(pid) == "off"
 
@@ -126,6 +140,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
+         name: nil,
          led_path: led_dir,
          indicators: %{
            default: %{red: "led0", green: "led1", blue: "led2"},
@@ -188,7 +203,10 @@ defmodule DeluxTest do
   test "render raises on unknown priorities", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
-    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
 
     assert_raise ArgumentError, fn ->
       Delux.render(pid, Delux.Effects.on(:green), :unknown_priority)
@@ -199,7 +217,10 @@ defmodule DeluxTest do
   test "render raises on unknown indicator", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
-    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
 
     assert_raise ArgumentError, fn ->
       Delux.render(pid, %{my_indicator: Delux.Effects.on(:green)})
@@ -208,5 +229,65 @@ defmodule DeluxTest do
 
   defp info_as_binary(pid, indicator \\ :default) do
     Delux.info_as_ansidata(pid, indicator) |> IO.ANSI.format(false) |> IO.iodata_to_binary()
+  end
+
+  @tag :tmp_dir
+  test "singleton Delux", %{tmp_dir: led_dir} do
+    # Since Delux is a singleton and the unit tests are run async, this is
+    # the only test that uses this configuration. It exercises that default options
+    # to Delux all go to the singleton instance.
+
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid = start_supervised!({Delux, led_path: led_dir, indicators: %{default: %{green: "led0"}}})
+    assert Process.whereis(Delux) == pid
+
+    assert singleton_info_as_binary() == "off"
+
+    # Check initialized to off
+    assert FakeLEDs.read_trigger(0) == "pattern"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
+
+    # Blink it
+    Delux.render(Delux.Effects.blink(:green, 2))
+    assert singleton_info_as_binary() == "green at 2 Hz"
+    assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
+
+    # Clear it
+    Delux.clear()
+    assert singleton_info_as_binary() == "off"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
+  end
+
+  defp singleton_info_as_binary() do
+    Delux.info_as_ansidata() |> IO.ANSI.format(false) |> IO.iodata_to_binary()
+  end
+
+  @tag :tmp_dir
+  test "named Delux", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid =
+      start_supervised!(
+        {Delux, name: MyDelux, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
+
+    assert Process.whereis(MyDelux) == pid
+
+    assert info_as_binary(MyDelux) == "off"
+
+    # Check initialized to off
+    assert FakeLEDs.read_trigger(0) == "pattern"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
+
+    # Blink it
+    Delux.render(MyDelux, Delux.Effects.blink(:green, 2))
+    assert info_as_binary(MyDelux) == "green at 2 Hz"
+    assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
+
+    # Clear it
+    Delux.clear(MyDelux)
+    assert info_as_binary(MyDelux) == "off"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
   end
 end

@@ -44,15 +44,15 @@ To give a flavor of how `delux` works, here's an example that configures `delux`
 with one green LED and then blinks it at 2 Hz:
 
 ```elixir
-iex> {:ok, pid} = Delux.start_link(indicators: %{default: %{green: "led0"}})
-iex> Delux.render(pid, Delux.Effects.blink(:green, 2))
-iex> Delux.info(pid)
+iex> Delux.start_link(indicators: %{default: %{green: "led0"}})
+iex> Delux.render(Delux.Effects.blink(:green, 2))
+iex> Delux.info()
 green at 2 Hz
 ```
 
 This starts Delux with one indicator, `:default`, that has a green LED known to
-Linux as `"led0"`. The `Delux.Effects.blink/3` function creates a 2 Hz blinking
-program for Delux to render. With nothing else specified, `Delux.render/2` runs
+Linux as `"led0"`. The `Delux.Effects.blink/2` function creates a 2 Hz blinking
+program for Delux to render. With nothing else specified, `Delux.render/1` runs
 the program on the default indicator at the default priority.
 
 <!-- MODULEDOC -->
@@ -127,15 +127,29 @@ is an RGB indicator. The second is a lone red LED that's used as `:indicator2`.
 As mentioned before, if you only have one indicator, call it `:default`.
 
 Other options include setting the list of priorities and giving the `Delux`
-GenServer a name. Those are optional.
+GenServer a name. If you don't give the `Delux` GenServer a name, it will
+register itself as a singleton and you won't have to pass the server name or pid
+to any of the API calls.
 
 ## Use
 
-After you have a `Delux` GenServer and running, call `Delux.render/2` to turn on
+For sake of example, lets start the `Delux` GenServer the manual way by calling
+`start_link/1` directly. The usual way in your programs would be to add the
+childspec to the supervision tree as shown earlier. Modify the LED names to
+whatever you have.
+
+```elixir
+iex> Delux.start_link(indicators: %{
+     default: %{red: "led0:red", green: "led0:green", blue: "led0:blue"},
+     indicator2: %{red: "led1"}
+   })
+```
+
+After you have a `Delux` GenServer and running, call `Delux.render/1` to turn on
 the default indicator on the default priority:
 
 ```elixir
-iex> Delux.render(MyIndicators, Delux.Effects.on(:white))
+iex> Delux.render(Delux.Effects.on(:white))
 :ok
 ```
 
@@ -146,14 +160,14 @@ If you have two indicators and want them to blink back and forth, you can try
 this:
 
 ```elixir
-iex> Delux.render(MyIndicators, %{
+iex> Delux.render(%{
     default: Delux.Effects.cycle([:black, :white], 1),
     indicator2: Delux.Effects.cycle([:white, :black], 1)
   })
 :ok
 ```
 
-Finally, pass a third parameter to `Delux.render/3` to assign the programs to
+Finally, pass a second parameter to `Delux.render/2` to assign the programs to
 another priority.
 
 ## Creating your own programs
