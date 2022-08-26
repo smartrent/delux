@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.0 - 2022-08-26
+
+* Changes
+  * Register the Delux GenServer with a default name so that pids or names don't
+    need to be passed to all APIs. Since Delux is almost always used as a
+    singleton, this simplifies the API.
+
 ## v0.1.3 - 2022-08-11
 
 * Changes
