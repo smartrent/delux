@@ -85,6 +85,26 @@ defmodule Delux do
   end
 
   @doc """
+  Helper for rendering a program when using Delux's defaults
+
+  This calls `render/3` using the default Delux GenServer and default priority.
+  """
+  @spec render(%{indicator_name() => Program.t() | nil} | Program.t() | nil) :: :ok
+  def render(program) when is_map(program) or is_nil(program) do
+    render(__MODULE__, program, @default_priority)
+  end
+
+  @doc """
+  Helper for rendering a program at a priority
+
+  This calls `render/3` using the default Delux GenServer.
+  """
+  @spec render(%{indicator_name() => Program.t() | nil} | Program.t() | nil, priority()) :: :ok
+  def render(program, priority) when (is_map(program) or is_nil(program)) and is_atom(priority) do
+    render(__MODULE__, program, priority)
+  end
+
+  @doc """
   Update one or more indicators to a new program
 
   Passing `nil` for the program removes the program running at the specified
@@ -95,7 +115,6 @@ defmodule Delux do
           %{indicator_name() => Program.t() | nil} | Program.t() | nil,
           priority()
         ) :: :ok
-  def render(server \\ __MODULE__, program, priority \\ @default_priority)
 
   def render(server, %Program{} = program, priority) when is_atom(priority) do
     with {:error, reason} <-
@@ -142,21 +161,45 @@ defmodule Delux do
   end
 
   @doc """
+  Call `info/2` with the defaults
+  """
+  @spec info() :: :ok
+  def info(), do: info(__MODULE__, @default_indicator)
+
+  @doc """
+  Call `info/2` with the specified indicator
+  """
+  @spec info(indicator_name()) :: :ok
+  def info(indicator), do: info(__MODULE__, indicator)
+
+  @doc """
   Print out info about an indicator
 
   This is handy when you can't physically see an indicator. It's intended for
   users at the IEx prompt. For programmatic use, see `info_as_ansidata/2`.
   """
-  @spec info(GenServer.server(), indicator_name()) :: IO.ANSI.ansidata()
-  def info(server \\ __MODULE__, indicator \\ @default_indicator) do
+  @spec info(GenServer.server(), indicator_name()) :: :ok
+  def info(server, indicator) do
     info_as_ansidata(server, indicator) |> IO.ANSI.format() |> IO.puts()
   end
+
+  @doc """
+  Call `info_as_ansidata/2` with the defaults
+  """
+  @spec info_as_ansidata() :: IO.ANSI.ansidata()
+  def info_as_ansidata(), do: info_as_ansidata(__MODULE__, @default_indicator)
+
+  @doc """
+  Call `info_as_ansidata/2` with the specified indicator
+  """
+  @spec info_as_ansidata(indicator_name()) :: IO.ANSI.ansidata()
+  def info_as_ansidata(indicator), do: info_as_ansidata(__MODULE__, indicator)
 
   @doc """
   Return user-readable information about an indicator
   """
   @spec info_as_ansidata(GenServer.server(), indicator_name()) :: IO.ANSI.ansidata()
-  def info_as_ansidata(server \\ __MODULE__, indicator \\ @default_indicator) do
+  def info_as_ansidata(server, indicator) do
     case GenServer.call(server, {:info, indicator}) do
       {:ok, result} -> result
       {:error, reason} -> raise reason
