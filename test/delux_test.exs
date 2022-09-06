@@ -7,7 +7,7 @@ defmodule DeluxTest do
     # This is useful for projects that have LEDs on some devices, but not on others.
     pid = start_supervised!({Delux, name: nil})
 
-    Delux.render(pid, Delux.Effects.blink(:green, 2))
+    Delux.render(pid, Delux.Effects.blink(:green, 2), :status)
   end
 
   @tag :tmp_dir
@@ -19,14 +19,14 @@ defmodule DeluxTest do
         {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
       )
 
-    assert info_as_binary(pid) == "off"
+    assert info_as_binary(pid, :default) == "off"
 
     # Check initialized to off
     assert FakeLEDs.read_trigger(0) == "pattern"
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
 
     # Blink it
-    Delux.render(pid, Delux.Effects.blink(:green, 2))
+    Delux.render(pid, Delux.Effects.blink(:green, 2), :status)
     assert info_as_binary(pid) == "green at 2 Hz"
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
 
@@ -56,14 +56,14 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(2) == "0 3600000 0 0 "
 
     # Blink it
-    Delux.render(pid, Delux.Effects.blink(:magenta, 2))
+    Delux.render(pid, Delux.Effects.blink(:magenta, 2), :status)
     assert info_as_binary(pid) == "magenta at 2 Hz"
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
     assert FakeLEDs.read_pattern(1) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(2) == "1 250 1 0 0 250 0 0 "
 
     # Clear it the shortcut way"
-    Delux.render(pid, nil)
+    Delux.render(pid, nil, :status)
     assert info_as_binary(pid) == "off"
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(1) == "0 3600000 0 0 "
@@ -121,7 +121,7 @@ defmodule DeluxTest do
     assert info_as_binary(pid) == "off"
 
     # Blip it
-    Delux.render(pid, Delux.Effects.blip(:green, :black))
+    Delux.render(pid, Delux.Effects.blip(:green, :black), :status)
     assert info_as_binary(pid) == "green->black blip"
     assert FakeLEDs.read_pattern(0) == "0 10 0 0 1 20 1 0 0 3600000 0 0 "
 
@@ -157,7 +157,7 @@ defmodule DeluxTest do
     end
 
     # Blink the default indicator
-    Delux.render(pid, Delux.Effects.blink(:magenta, 2))
+    Delux.render(pid, Delux.Effects.blink(:magenta, 2), :status)
     assert info_as_binary(pid) == "magenta at 2 Hz"
     assert info_as_binary(pid, :indicator2) == "off"
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
@@ -168,7 +168,7 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(5) == "0 3600000 0 0 "
 
     # Start a second blink on indicator2
-    Delux.render(pid, %{indicator2: Delux.Effects.blink(:blue, 1)})
+    Delux.render(pid, %{indicator2: Delux.Effects.blink(:blue, 1)}, :status)
     assert info_as_binary(pid) == "magenta at 2 Hz"
     assert info_as_binary(pid, :indicator2) == "blue at 1 Hz"
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
@@ -179,7 +179,7 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(5) == "1 500 1 0 0 500 0 0 "
 
     # Turn off the first blink
-    Delux.render(pid, %{default: nil})
+    Delux.render(pid, %{default: nil}, :status)
     assert info_as_binary(pid) == "off"
     assert info_as_binary(pid, :indicator2) == "blue at 1 Hz"
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
@@ -190,7 +190,7 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(5) == "1 500 1 0 0 500 0 0 "
 
     # Turn off the second blink
-    Delux.render(pid, %{indicator2: nil})
+    Delux.render(pid, %{indicator2: nil}, :status)
     assert info_as_binary(pid) == "off"
     assert info_as_binary(pid, :indicator2) == "off"
 
@@ -223,7 +223,7 @@ defmodule DeluxTest do
       )
 
     assert_raise ArgumentError, fn ->
-      Delux.render(pid, %{my_indicator: Delux.Effects.on(:green)})
+      Delux.render(pid, %{my_indicator: Delux.Effects.on(:green)}, :status)
     end
   end
 
@@ -281,7 +281,7 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
 
     # Blink it
-    Delux.render(MyDelux, Delux.Effects.blink(:green, 2))
+    Delux.render(MyDelux, Delux.Effects.blink(:green, 2), :status)
     assert info_as_binary(MyDelux) == "green at 2 Hz"
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
 
