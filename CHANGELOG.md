@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0 - 2022-09-07
+
+* Changes
+  * Favor singleton use of Delux with default arguments to `render/3` and
+    `info/2`. Now that Delux is being used more frequently as a singleton, this
+    makes the API more convenient. This is backwards incompatible if you had
+    been taking advantage of default arguments, but you should get compile-time
+    and dialyzer errors. If you do name your Delux GenServers, you'll have to
+    specify all arguments to `render/3` and `info/2`.
+  * Improve argument error messages by reporting what the valid options are in
+    addition to what you passed.
+
 ## v0.2.0 - 2022-08-26
 
 * Changes
