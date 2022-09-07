@@ -220,10 +220,19 @@ defmodule Delux do
   end
 
   def handle_call({:info, indicator}, _from, state) do
+    summarized = summarize_programs(state)
+
     result =
-      case summarize_programs(state)[indicator] do
-        nil -> {:error, %ArgumentError{message: "Invalid indicator #{inspect(indicator)}"}}
-        program -> {:ok, Program.ansi_description(program)}
+      case summarized[indicator] do
+        nil ->
+          {:error,
+           %ArgumentError{
+             message:
+               "Invalid indicator #{inspect(indicator)}. Valid indicators #{inspect(Map.keys(summarized))}"
+           }}
+
+        program ->
+          {:ok, Program.ansi_description(program)}
       end
 
     {:reply, result, state}
@@ -261,7 +270,11 @@ defmodule Delux do
     if priority in state.priorities do
       :ok
     else
-      {:error, %ArgumentError{message: "Invalid priority #{inspect(priority)}"}}
+      {:error,
+       %ArgumentError{
+         message:
+           "Invalid priority #{inspect(priority)}. Valid priorities: #{inspect(state.priorities)}"
+       }}
     end
   end
 
@@ -269,8 +282,15 @@ defmodule Delux do
     names = Map.keys(indicators)
 
     case Enum.find(names, fn name -> name not in state.indicator_names end) do
-      nil -> :ok
-      name -> {:error, %ArgumentError{message: "Invalid indicator #{inspect(name)}"}}
+      nil ->
+        :ok
+
+      name ->
+        {:error,
+         %ArgumentError{
+           message:
+             "Invalid indicator #{inspect(name)}. Valid indicators: #{inspect(state.indicator_names)}"
+         }}
     end
   end
 
