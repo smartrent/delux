@@ -40,7 +40,7 @@ defmodule Delux.MorseTest do
     assert p.green == [{0, 1680}, {0, 0}]
     assert p.blue == [{0, 1680}, {0, 0}]
 
-    assert p.duration == 1680
+    assert p.mode == :one_shot
     assert Program.text_description(p) == "Morse code: TEST"
   end
 
@@ -67,7 +67,7 @@ defmodule Delux.MorseTest do
 
     assert p.blue == [{0, 1440}, {0, 0}]
 
-    assert p.duration == 1440
+    assert p.mode == :one_shot
     assert Program.text_description(p) == "Morse code: E E E"
   end
 end

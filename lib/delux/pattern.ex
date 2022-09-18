@@ -26,13 +26,35 @@ defmodule Delux.Pattern do
 
   @doc """
   Convert a pattern to iodata
+
+  * `pattern` - the pattern to convert
+  * `max_b` - the max brightness supported by the LED (usually 1 or 255)
+
+  Returns a tuple with the iodata and total duration
   """
-  @spec to_iodata(t(), non_neg_integer()) :: iolist()
-  def to_iodata(pattern, max_b) do
-    for {component, duration} <- pattern do
-      [to_string(round(component * max_b)), " ", to_string(duration), " "]
-    end
+  @spec build_iodata(t(), non_neg_integer()) :: {iolist(), non_neg_integer()}
+  def build_iodata(pattern, max_b) do
+    build(pattern, max_b, [], 0)
   end
+
+  defp build([], _max_b, acc, total) do
+    {acc, total}
+  end
+
+  defp build([{component, duration} | rest], max_b, acc, total) do
+    brightness = round(component * max_b)
+    new_total = duration + total
+    new_acc = [acc, [to_string(brightness), " ", to_string(duration), " "]]
+    build(rest, max_b, new_acc, new_total)
+  end
+
+  @doc """
+  Return a number of ms that should be considered a long time
+
+  Linux doesn't support an infinite timeout, so use this value instead.
+  """
+  @spec forever_ms() :: 3_600_000
+  def forever_ms(), do: 3_600_000
 
   @doc """
   PWM a sequence of elements

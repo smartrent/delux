@@ -14,7 +14,7 @@ defmodule Delux.EffectsTest do
       assert off.red == off.green
       assert off.red == off.blue
 
-      assert off.duration == :infinity
+      assert off.mode == :simple_loop
     end
 
     test "description" do
@@ -31,7 +31,7 @@ defmodule Delux.EffectsTest do
       assert pattern.green == [{0, 3_600_000}, {0, 0}]
       assert pattern.red == pattern.blue
 
-      assert pattern.duration == :infinity
+      assert pattern.mode == :simple_loop
     end
 
     test "description" do
@@ -48,7 +48,7 @@ defmodule Delux.EffectsTest do
       assert pattern.green == [{0, 3_600_000}, {0, 0}]
       assert pattern.blue == [{1, 250}, {1, 0}, {0, 250}, {0, 0}]
 
-      assert pattern.duration == :infinity
+      assert pattern.mode == :simple_loop
     end
 
     test "blinking too fast is solid on" do
@@ -77,11 +77,11 @@ defmodule Delux.EffectsTest do
     test "build a blip" do
       pattern = Effects.blip(:red, :green)
 
-      assert pattern.red == [{0, 10}, {0, 0}, {1, 20}, {1, 0}, {0, 3_600_000}, {0, 0}]
-      assert pattern.green == [{0, 20}, {0, 0}, {1, 20}, {1, 0}, {0, 3_600_000}, {0, 0}]
+      assert pattern.red == [{0, 10}, {0, 0}, {1, 20}, {1, 0}]
+      assert pattern.green == [{0, 20}, {0, 0}, {1, 20}, {1, 0}]
       assert pattern.blue == [{0, 3_600_000}, {0, 0}]
 
-      assert pattern.duration == 40
+      assert pattern.mode == :one_shot
     end
 
     test "description" do
@@ -98,7 +98,7 @@ defmodule Delux.EffectsTest do
       assert pattern.green == [{0, 333}, {0, 0}, {1, 333}, {1, 0}, {0, 333}, {0, 0}]
       assert pattern.blue == [{0, 333}, {0, 0}, {0, 333}, {0, 0}, {1, 333}, {1, 0}]
 
-      assert pattern.duration == :infinity
+      assert pattern.mode == :simple_loop
     end
 
     test "description" do
@@ -124,7 +124,7 @@ defmodule Delux.EffectsTest do
       assert p.red == [{0, 2000}, {0, 0}]
       assert p.green == [{0, 2000}, {0, 0}]
 
-      assert p.duration == :infinity
+      assert p.mode == :simple_loop
     end
 
     test "triangle that uses time_step" do
@@ -178,7 +178,7 @@ defmodule Delux.EffectsTest do
       assert pattern.green == [{0, 3_600_000}, {0, 0}]
       assert pattern.blue == [{0, 3_600_000}, {0, 0}]
 
-      assert pattern.duration == :infinity
+      assert pattern.mode == :simple_loop
     end
 
     test "custom blink out 5" do
@@ -218,7 +218,7 @@ defmodule Delux.EffectsTest do
       assert pattern.green == expected_pattern
       assert pattern.blue == expected_pattern
 
-      assert pattern.duration == :infinity
+      assert pattern.mode == :simple_loop
     end
 
     test "description" do

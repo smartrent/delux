@@ -14,7 +14,9 @@ defmodule Delux.Glue do
         }
 
   @typedoc false
-  @type compiled() :: {nil | iodata(), nil | iodata(), nil | iodata()}
+  @type compiled() :: {nil | iodata(), nil | iodata(), nil | iodata(), Pattern.milliseconds()}
+
+  @led_off "0 3600000 0 0"
 
   @doc """
   Open and prep file handles for writing patterns
@@ -38,36 +40,57 @@ defmodule Delux.Glue do
   @doc """
   Compile an indicator program so that it can be run efficiently later
   """
-  @spec compile_program!(state(), Program.t(), 0..100) :: {compiled(), Pattern.milliseconds()}
+  @spec compile_program!(state(), Program.t(), 0..100) :: compiled()
   def compile_program!(%{} = state, %Program{} = program, percent) do
     # Process the patterns for brightness adjustments and convert to iodata
-    r = maybe_prep_iodata(state.red, program.red, percent, state.red_max)
-    g = maybe_prep_iodata(state.green, program.green, percent, state.green_max)
-    b = maybe_prep_iodata(state.blue, program.blue, percent, state.blue_max)
+    {r, r_duration} =
+      maybe_prep_iodata(state.red, program.red, percent, state.red_max, program.mode)
 
-    {{r, g, b}, program.duration}
+    {g, g_duration} =
+      maybe_prep_iodata(state.green, program.green, percent, state.green_max, program.mode)
+
+    {b, b_duration} =
+      maybe_prep_iodata(state.blue, program.blue, percent, state.blue_max, program.mode)
+
+    duration =
+      case program.mode do
+        :simple_loop ->
+          Pattern.forever_ms()
+
+        :one_shot ->
+          # First LED to finish is the duration
+          min(min(r_duration, g_duration), b_duration)
+      end
+
+    {r, g, b, duration}
   end
 
   @doc """
   Run the program
   """
-  @spec set_program(state(), compiled()) :: state()
-  def set_program(%{} = state, {r, g, b}) do
+  @spec set_program(state(), compiled(), Pattern.milliseconds()) ::
+          {state(), Pattern.milliseconds()}
+  def set_program(%{} = state, {r, g, b, duration}, _time_offset) do
     # Write RGB as close together as possible to keep them close to in sync
     maybe_write!(state.red, r)
     maybe_write!(state.green, g)
     maybe_write!(state.blue, b)
 
-    state
+    {state, duration}
   end
 
-  defp maybe_prep_iodata(nil, _sequence, _percent, _max_brightness), do: nil
+  defp maybe_prep_iodata(nil, _sequence, _percent, _max_brightness, _mode),
+    do: {nil, Pattern.forever_ms()}
 
-  defp maybe_prep_iodata(_handle, sequence, percent, max_brightness) do
+  defp maybe_prep_iodata(_handle, sequence, percent, max_brightness, mode) do
     sequence
     |> Pattern.pwm(percent)
-    |> Pattern.to_iodata(max_brightness)
+    |> Pattern.build_iodata(max_brightness)
+    |> append_trailer(mode)
   end
+
+  defp append_trailer({iodata, duration}, :one_shot), do: {[iodata, @led_off], duration}
+  defp append_trailer(iodata_and_duration, _), do: iodata_and_duration
 
   defp maybe_write!(nil, _data), do: :ok
   defp maybe_write!(handle, data), do: :ok = IO.binwrite(handle, data)

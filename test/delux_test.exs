@@ -92,10 +92,10 @@ defmodule DeluxTest do
     assert info_as_binary(pid) == "green at 1 Hz"
     assert FakeLEDs.read_pattern(0) == "1 500 1 0 0 500 0 0 "
 
-    # Set a lower priority blink and check that nothing changes
+    # Set a lower priority blink and check that nothing gets written
     Delux.render(pid, Delux.Effects.blink(:green, 5), :status)
     assert info_as_binary(pid) == "green at 1 Hz"
-    assert FakeLEDs.read_pattern(0) == "1 500 1 0 0 500 0 0 "
+    assert FakeLEDs.read_pattern(0) == ""
 
     # Clear the higher priority blink
     Delux.render(pid, nil, :notification)
@@ -123,7 +123,7 @@ defmodule DeluxTest do
     # Blip it
     Delux.render(pid, Delux.Effects.blip(:green, :black), :status)
     assert info_as_binary(pid) == "green->black blip"
-    assert FakeLEDs.read_pattern(0) == "0 10 0 0 1 20 1 0 0 3600000 0 0 "
+    assert FakeLEDs.read_pattern(0) == "0 10 0 0 1 20 1 0 0 3600000 0 0"
 
     # Wait for the timeout
     Process.sleep(100)
@@ -163,17 +163,18 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
     assert FakeLEDs.read_pattern(1) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(2) == "1 250 1 0 0 250 0 0 "
-    assert FakeLEDs.read_pattern(3) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(4) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(5) == "0 3600000 0 0 "
+    # Not written
+    assert FakeLEDs.read_pattern(3) == ""
+    assert FakeLEDs.read_pattern(4) == ""
+    assert FakeLEDs.read_pattern(5) == ""
 
     # Start a second blink on indicator2
     Delux.render(pid, %{indicator2: Delux.Effects.blink(:blue, 1)}, :status)
     assert info_as_binary(pid) == "magenta at 2 Hz"
     assert info_as_binary(pid, :indicator2) == "blue at 1 Hz"
-    assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
-    assert FakeLEDs.read_pattern(1) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(2) == "1 250 1 0 0 250 0 0 "
+    assert FakeLEDs.read_pattern(0) == ""
+    assert FakeLEDs.read_pattern(1) == ""
+    assert FakeLEDs.read_pattern(2) == ""
     assert FakeLEDs.read_pattern(3) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(4) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(5) == "1 500 1 0 0 500 0 0 "
@@ -185,18 +186,21 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(1) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(2) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(3) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(4) == "0 3600000 0 0 "
-    assert FakeLEDs.read_pattern(5) == "1 500 1 0 0 500 0 0 "
+    assert FakeLEDs.read_pattern(3) == ""
+    assert FakeLEDs.read_pattern(4) == ""
+    assert FakeLEDs.read_pattern(5) == ""
 
     # Turn off the second blink
     Delux.render(pid, %{indicator2: nil}, :status)
     assert info_as_binary(pid) == "off"
     assert info_as_binary(pid, :indicator2) == "off"
 
-    for i <- 0..5 do
-      assert FakeLEDs.read_pattern(i) == "0 3600000 0 0 "
-    end
+    assert FakeLEDs.read_pattern(0) == ""
+    assert FakeLEDs.read_pattern(1) == ""
+    assert FakeLEDs.read_pattern(2) == ""
+    assert FakeLEDs.read_pattern(3) == "0 3600000 0 0 "
+    assert FakeLEDs.read_pattern(4) == "0 3600000 0 0 "
+    assert FakeLEDs.read_pattern(5) == "0 3600000 0 0 "
   end
 
   @tag :tmp_dir

@@ -6,6 +6,7 @@ defmodule Delux do
 
   alias Delux.Effects
   alias Delux.Glue
+  alias Delux.Pattern
   alias Delux.Program
 
   @default_slot :status
@@ -205,15 +206,18 @@ defmodule Delux do
     end
   end
 
+  @typep entry() ::
+           {non_neg_integer(), Pattern.milliseconds(), Delux.indicator_name(), Program.t()}
+
   @typedoc false
   @type state() :: %{
+          indicator_names: [indicator_name()],
           glue: %{indicator_name() => Glue.state()},
-          slots: [slot()],
+          slot_to_priority: %{slot() => non_neg_integer()},
           brightness: 0..100,
-          active: %{slot() => %{indicator_name() => Program.t()}},
-          all_off: %{indicator_name() => Program.t()},
-          timers: %{slot() => {reference(), reference()}},
-          indicator_names: [indicator_name()]
+          active: [entry()],
+          current: %{indicator_name() => entry()},
+          refresh_time: integer() | :infinity
         }
 
   @impl GenServer
@@ -222,22 +226,17 @@ defmodule Delux do
     indicator_configs = options[:indicators] || @default_indicator_config
     led_path = options[:led_path] || @default_led_path
 
-    off = Effects.off()
-    all_off = for {name, _config} <- indicator_configs, do: {name, off}
-
     state = %{
-      glue: open_indicators(led_path, indicator_configs),
       indicator_names: Map.keys(indicator_configs),
-      slots: slots,
-      active: %{},
+      glue: open_indicators(led_path, indicator_configs),
+      slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
+      active: [],
       brightness: 100,
-      all_off: Map.new(all_off),
-      timers: %{}
+      current: %{},
+      refresh_time: :infinity
     }
 
-    refresh_indicators(state)
-
-    {:ok, state}
+    {:ok, refresh_indicators(state)}
   end
 
   @impl GenServer
@@ -256,65 +255,84 @@ defmodule Delux do
   end
 
   def handle_call({:adjust_brightness, percent}, _from, state) do
-    new_state = %{state | brightness: percent}
-    refresh_indicators(new_state)
+    new_state = %{state | brightness: percent} |> refresh_indicators()
+
     {:reply, :ok, new_state}
   end
 
   def handle_call({:info, indicator}, _from, state) do
-    summarized = summarize_programs(state)
-
     result =
-      case summarized[indicator] do
-        nil ->
-          {:error,
-           %ArgumentError{
-             message:
-               "Invalid indicator #{inspect(indicator)}. Valid indicators #{inspect(Map.keys(summarized))}"
-           }}
+      if indicator in state.indicator_names do
+        {_priority, _start_time, _indicator, program} = best_entry(state.active, indicator)
 
-        program ->
-          {:ok, Program.ansi_description(program)}
+        {:ok, Program.ansi_description(program)}
+      else
+        {:error,
+         %ArgumentError{
+           message:
+             "Invalid indicator #{inspect(indicator)}. Valid indicators #{inspect(state.indicator_names)}"
+         }}
       end
 
     {:reply, result, state}
   end
 
-  defp remove_nil_values(m) do
-    for {k, v} <- m, v != nil, reduce: %{} do
-      acc -> Map.put(acc, k, v)
-    end
-  end
-
-  defp merge_indicator_program(nil, new_mapping), do: remove_nil_values(new_mapping)
-
-  defp merge_indicator_program(current_mapping, new_mapping) do
-    current_mapping |> Map.merge(new_mapping) |> remove_nil_values()
-  end
-
   defp do_render(state, slot, indicators) do
-    with :ok <- check_slot(slot, state),
+    with {:ok, priority} <- slot_to_priority(slot, state),
          :ok <- check_indicator_programs(indicators, state) do
-      merged_indicators = merge_indicator_program(Map.get(state.active, slot), indicators)
+      start_time_ms = System.monotonic_time(:millisecond)
 
-      new_active = Map.put(state.active, slot, merged_indicators)
-      new_state = %{state | active: new_active}
+      entries =
+        for {indicator, program} <- indicators, do: {priority, start_time_ms, indicator, program}
 
-      refresh_indicators(new_state)
+      merged_entries = merge_entries_at_priority(priority, state.active, entries)
+      new_state = %{state | active: merged_entries} |> refresh_indicators()
 
-      new_timers = start_timer(state.timers, slot, merged_indicators)
-
-      {:ok, %{new_state | timers: new_timers}}
+      {:ok, new_state}
     end
   end
 
-  defp check_slot(slot, state) do
-    if slot in state.slots do
-      :ok
+  # Clear out the specified priority. Since the list is in order, this stops when done.
+  defp clear_entries_at_priority(p, [{p, _os, _oi, _op} | rest]) do
+    clear_entries_at_priority(p, rest)
+  end
+
+  defp clear_entries_at_priority(p, [{p2, _os, _oi, _op} = entry | rest]) when p > p2 do
+    [entry | clear_entries_at_priority(p, rest)]
+  end
+
+  defp clear_entries_at_priority(_p, entries) do
+    entries
+  end
+
+  defp merge_entries_at_priority(p, [{p, _os, i, _op} = entry | rest], new_entries) do
+    # check if indicator in set of new_entries
+    if Enum.any?(new_entries, fn {_, _, indicator, _} -> indicator == i end) do
+      merge_entries_at_priority(p, rest, new_entries)
     else
+      [entry | merge_entries_at_priority(p, rest, new_entries)]
+    end
+  end
+
+  defp merge_entries_at_priority(p, [{p2, _os, _oi, _op} = entry | rest], new_entries)
+       when p > p2 do
+    [entry | merge_entries_at_priority(p, rest, new_entries)]
+  end
+
+  defp merge_entries_at_priority(_p, entries, new_entries) do
+    # nil programs are used to selectively remove programs running on an indicator
+    # at a specific priority. They need to be in the new_entries list to filter
+    # existing programs, but shouldn't be added.
+    non_nil_entries = Enum.filter(new_entries, fn {_, _, _, program} -> program end)
+    non_nil_entries ++ entries
+  end
+
+  defp slot_to_priority(slot, state) do
+    with :error <- Map.fetch(state.slot_to_priority, slot) do
       {:error,
        %ArgumentError{
-         message: "Invalid slot #{inspect(slot)}. Valid slots: #{inspect(state.slots)}"
+         message:
+           "Invalid slot #{inspect(slot)}. Valid slots: #{inspect(Map.keys(state.slot_to_priority))}"
        }}
     end
   end
@@ -335,84 +353,101 @@ defmodule Delux do
     end
   end
 
-  defp find_max_duration(indicators) when map_size(indicators) == 0, do: :infinity
-
-  defp find_max_duration(indicators) do
-    durations = for {_indicator, program} <- indicators, do: program.duration
-    Enum.max(durations)
-  end
-
-  defp start_timer(timers, slot, indicators) do
-    duration = find_max_duration(indicators)
-
-    if duration != :infinity do
-      ref = make_ref()
-
-      timer_ref = Process.send_after(self(), {:clear, slot, ref}, duration)
-
-      case Map.get(timers, slot) do
-        {old_timer_ref, _ref} ->
-          _ = Process.cancel_timer(old_timer_ref)
-          :ok
-
-        _ ->
-          :ok
-      end
-
-      Map.put(timers, slot, {timer_ref, ref})
-    else
-      timers
-    end
-  end
-
   defp do_clear(state, slot) do
-    with :ok <- check_slot(slot, state) do
-      new_active = Map.delete(state.active, slot)
+    with {:ok, priority} <- slot_to_priority(slot, state) do
+      new_active = clear_entries_at_priority(priority, state.active)
       new_state = %{state | active: new_active}
 
-      refresh_indicators(new_state)
-
-      {:ok, new_state}
+      {:ok, refresh_indicators(new_state)}
     end
   end
 
-  @spec summarize_programs(state()) :: %{indicator_name() => Program.t()}
-  defp summarize_programs(state) do
-    Enum.reduce(state.slots, state.all_off, fn slot, acc ->
-      case Map.fetch(state.active, slot) do
-        {:ok, indicator_programs} -> Map.merge(acc, indicator_programs)
-        :error -> acc
-      end
-    end)
+  defp best_entry([], indicator_name) do
+    {99, 0, indicator_name, Effects.off()}
+  end
+
+  defp best_entry([{_p, _start_time, indicator_name, _program} = entry | _rest], indicator_name) do
+    entry
+  end
+
+  defp best_entry([_entry | rest], indicator_name) do
+    best_entry(rest, indicator_name)
+  end
+
+  defp pop_entry([{_p, _start_time, indicator_name, _program} | rest], indicator_name) do
+    rest
+  end
+
+  defp pop_entry([entry | rest], indicator_name) do
+    [entry | pop_entry(rest, indicator_name)]
   end
 
   defp refresh_indicators(state) do
-    summarized = summarize_programs(state)
+    current_time = System.monotonic_time(:millisecond)
 
-    Enum.reduce(summarized, state.glue, fn {indicator, program}, glue_state ->
-      indicator_state = glue_state[indicator]
-      {compiled, _duration} = Glue.compile_program!(indicator_state, program, state.brightness)
+    new_state =
+      Enum.reduce(state.indicator_names, state, &refresh_indicator(&2, &1, current_time))
 
-      new_indicator_state = Glue.set_program(indicator_state, compiled)
-      Map.put(glue_state, indicator, new_indicator_state)
-    end)
+    if new_state.refresh_time != :infinity do
+      _ = Process.send_after(self(), :refresh, new_state.refresh_time, abs: true)
+      :ok
+    end
+
+    new_state
+  end
+
+  defp refresh_indicator(state, indicator_name, current_time) do
+    entry = best_entry(state.active, indicator_name)
+
+    case state.current[indicator_name] do
+      {^entry, end_time} ->
+        # Currently running this entry. Check if timed out.
+        if current_time > end_time do
+          new_state = %{
+            state
+            | active: pop_entry(state.active, indicator_name),
+              current: Map.delete(state.current, indicator_name)
+          }
+
+          refresh_indicator(new_state, indicator_name, current_time)
+        else
+          %{state | refresh_time: min(state.refresh_time, end_time)}
+        end
+
+      _ ->
+        # Different entry than what's currently running
+        {_priority, start_time, _indicator, program} = entry
+        indicator_state = state.glue[indicator_name]
+        compiled = Glue.compile_program!(indicator_state, program, state.brightness)
+
+        {new_indicator_state, time_left} =
+          Glue.set_program(indicator_state, compiled, start_time - current_time)
+
+        if time_left <= 0 do
+          # Timed out entry, so try again
+          new_state = %{
+            state
+            | active: pop_entry(state.active, indicator_name),
+              current: Map.delete(state.current, indicator_name),
+              glue: Map.put(state.glue, indicator_name, new_indicator_state)
+          }
+
+          refresh_indicator(new_state, indicator_name, current_time)
+        else
+          end_time = current_time + time_left
+
+          %{
+            state
+            | refresh_time: min(state.refresh_time, end_time),
+              current: Map.put(state.current, indicator_name, {entry, end_time})
+          }
+        end
+    end
   end
 
   @impl GenServer
-  def handle_info({:clear, slot, ref}, state) do
-    case Map.get(state.timers, slot) do
-      {_timer_ref, ^ref} ->
-        new_timers = Map.delete(state.timers, slot)
-        new_active = Map.delete(state.active, slot)
-        new_state = %{state | active: new_active, timers: new_timers}
-
-        refresh_indicators(new_state)
-        {:noreply, new_state}
-
-      _ ->
-        # Old timeout message - ignore
-        {:noreply, state}
-    end
+  def handle_info(:refresh, state) do
+    {:noreply, refresh_indicators(state)}
   end
 
   defp open_indicators(led_path, indicator_configs) do

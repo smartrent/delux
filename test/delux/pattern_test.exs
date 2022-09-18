@@ -18,11 +18,11 @@ defmodule Delux.PatternTest do
       assert Pattern.pwm(all_on, 100) == all_on
       assert Pattern.pwm(all_on, 0) == off_pattern()
 
-      assert Pattern.pwm(blip_pattern(), 0) == [{0, 3_600_030}, {0, 0}]
+      assert Pattern.pwm(blip_pattern(), 0) == [{0, 30}, {0, 0}]
     end
 
     test "patterns have same duration when off" do
-      assert Pattern.pwm(blip_pattern(), 0) == [{0, 3_600_030}, {0, 0}]
+      assert Pattern.pwm(blip_pattern(), 0) == [{0, 30}, {0, 0}]
     end
 
     test "pwm needed but off pattern" do
@@ -79,6 +79,7 @@ defmodule Delux.PatternTest do
   end
 
   defp pattern_to_binary(pattern, brightness \\ 1) do
-    pattern |> Pattern.to_iodata(brightness) |> IO.iodata_to_binary()
+    {iodata, _duration} = Pattern.build_iodata(pattern, brightness)
+    IO.iodata_to_binary(iodata)
   end
 end

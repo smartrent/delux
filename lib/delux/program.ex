@@ -8,7 +8,19 @@ defmodule Delux.Program do
   alias Delux.Effects
   alias Delux.Pattern
 
-  defstruct red: [], green: [], blue: [], description: "", duration: :infinity
+  defstruct red: [], green: [], blue: [], description: "", mode: :simple_loop
+
+  @typedoc """
+  Program playback mode
+
+  The playback mode determines what happens when the program gets interrupted
+  or ends.
+
+  * `:simple_loop` - keep repeating the program. If it's interrupted, just
+    restart at the the beginning.
+  * `:one_shot` - run the program once
+  """
+  @type mode() :: :one_shot | :simple_loop
 
   @typedoc """
   Program information for one indicator
@@ -18,7 +30,7 @@ defmodule Delux.Program do
           green: Pattern.t(),
           blue: Pattern.t(),
           description: IO.ANSI.ansidata(),
-          duration: Pattern.milliseconds() | :infinity
+          mode: mode()
         }
 
   @doc """

@@ -2,6 +2,7 @@ defmodule Delux.Morse do
   @moduledoc """
   Functions for Morse code patterns
   """
+
   alias Delux.Program
   alias Delux.RGB
 
@@ -83,7 +84,6 @@ defmodule Delux.Morse do
 
     up_string = String.upcase(string, :ascii)
     base_elements = morse(up_string, words_per_minute)
-
     duration = duration_elements(base_elements)
 
     %Program{
@@ -91,7 +91,7 @@ defmodule Delux.Morse do
       green: elements(g, base_elements, duration),
       blue: elements(b, base_elements, duration),
       description: "Morse code: #{up_string}",
-      duration: duration
+      mode: :one_shot
     }
   end
 
