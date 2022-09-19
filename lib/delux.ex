@@ -389,8 +389,12 @@ defmodule Delux do
   defp refresh_indicators(state) do
     summarized = summarize_programs(state)
 
-    Enum.each(summarized, fn {indicator, program} ->
-      Glue.set_program!(state.glue[indicator], program, state.brightness)
+    Enum.reduce(summarized, state.glue, fn {indicator, program}, glue_state ->
+      indicator_state = glue_state[indicator]
+      {compiled, _duration} = Glue.compile_program!(indicator_state, program, state.brightness)
+
+      new_indicator_state = Glue.set_program(indicator_state, compiled)
+      Map.put(glue_state, indicator, new_indicator_state)
     end)
   end
 

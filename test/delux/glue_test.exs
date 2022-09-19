@@ -6,14 +6,18 @@ defmodule Delux.GlueTest do
 
   doctest Glue
 
+  defp compile_and_set(state, program, percent) do
+    {compiled, _duration} = Glue.compile_program!(state, program, percent)
+    Glue.set_program(state, compiled)
+  end
+
   @tag :tmp_dir
   test "correctly writes to led files", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    state = Glue.open(led_dir, "led0", "led1", "led2")
-    Glue.set_program!(state, Delux.Effects.blink(:red, 5), 100)
-
-    Glue.close(state)
+    Glue.open(led_dir, "led0", "led1", "led2")
+    |> compile_and_set(Delux.Effects.blink(:red, 5), 100)
+    |> Glue.close()
 
     assert FakeLEDs.read_trigger(0) == "pattern"
     assert FakeLEDs.read_trigger(1) == "pattern"
@@ -29,11 +33,9 @@ defmodule Delux.GlueTest do
     FakeLEDs.create_leds(led_dir, 255)
 
     # Only configure a green LED, but run a blinking white program
-    state = Glue.open(led_dir, nil, "led0", nil)
-
-    Glue.set_program!(state, Delux.Effects.blink(:white, 1), 100)
-
-    Glue.close(state)
+    Glue.open(led_dir, nil, "led0", nil)
+    |> compile_and_set(Delux.Effects.blink(:white, 1), 100)
+    |> Glue.close()
 
     # Verify that only "led0" is configured and written
     assert FakeLEDs.read_trigger(0) == "pattern"

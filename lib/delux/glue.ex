@@ -13,6 +13,9 @@ defmodule Delux.Glue do
           blue_max: pos_integer()
         }
 
+  @typedoc false
+  @type compiled() :: {nil | iodata(), nil | iodata(), nil | iodata()}
+
   @doc """
   Open and prep file handles for writing patterns
   """
@@ -33,19 +36,29 @@ defmodule Delux.Glue do
   end
 
   @doc """
-  Finalize the pattern and send to Linux
+  Compile an indicator program so that it can be run efficiently later
   """
-  @spec set_program!(state(), Program.t(), 0..100) :: :ok
-  def set_program!(state, %Program{} = program, percent) do
+  @spec compile_program!(state(), Program.t(), 0..100) :: {compiled(), Pattern.milliseconds()}
+  def compile_program!(%{} = state, %Program{} = program, percent) do
     # Process the patterns for brightness adjustments and convert to iodata
     r = maybe_prep_iodata(state.red, program.red, percent, state.red_max)
     g = maybe_prep_iodata(state.green, program.green, percent, state.green_max)
     b = maybe_prep_iodata(state.blue, program.blue, percent, state.blue_max)
 
+    {{r, g, b}, program.duration}
+  end
+
+  @doc """
+  Run the program
+  """
+  @spec set_program(state(), compiled()) :: state()
+  def set_program(%{} = state, {r, g, b}) do
     # Write RGB as close together as possible to keep them close to in sync
     maybe_write!(state.red, r)
     maybe_write!(state.green, g)
     maybe_write!(state.blue, b)
+
+    state
   end
 
   defp maybe_prep_iodata(nil, _sequence, _percent, _max_brightness), do: nil
