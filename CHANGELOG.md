@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1 - 2022-09-26
+
+* Changes
+  * Support dimming arbitrary patterns to off. The dimming feature still doesn't
+    dim all patterns, but dimming to off works for everything now.
+
 ## v0.3.0 - 2022-09-07
 
 * Changes
