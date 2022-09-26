@@ -46,7 +46,10 @@ defmodule Delux.Pattern do
   @spec pwm(t(), 0..100) :: t()
   # Special cases for solid off
   def pwm([{0, _duration}, {0, 0}] = pattern, _percent), do: pattern
-  def pwm([{_, duration}, {_, 0}], 0), do: [{0, duration}, {0, 0}]
+
+  def pwm(pattern, 0) do
+    [{0, duration(pattern)}, {0, 0}]
+  end
 
   # Special case for solid on sequences
   def pwm([{component, _duration}, {component, 0}], percent)
@@ -100,4 +103,8 @@ defmodule Delux.Pattern do
   end
 
   def simplify(other), do: other
+
+  defp duration(pattern) do
+    Enum.reduce(pattern, 0, fn {_v, d}, acc -> acc + d end)
+  end
 end
