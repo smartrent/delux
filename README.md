@@ -67,6 +67,7 @@ possible to create your own. Here are the built-in ones:
 | `Delux.Effects.off/0`       | Turn an indicator off |
 | `Delux.Effects.on/2`        | Set the indicator to the specified color (within reason, that is. You can't make a green LED red, for example.) |
 | `Delux.Effects.blink/3`     | Blink a color on and off at a fixed rate |
+| `Delux.Effects.number_blink/3` | Blink the indicator the specified number of times |
 | `Delux.Effects.blip/3`      | Show two colors quickly in succession. E.g., use to show feedback from pressing a button. |
 | `Delux.Effects.cycle/3`     | Cycle through a set of colors at a fixed rate |
 | `Delux.Effects.waveform/2`  | Synthesize an LED pattern from a function |

@@ -157,4 +157,73 @@ defmodule Delux.EffectsTest do
       assert_raise FunctionClauseError, fn -> Effects.waveform(fn _ -> {2, 0, 0} end, 1000) end
     end
   end
+
+  describe "number_blink/3" do
+    test "blinking out 2" do
+      pattern = Effects.number_blink(:red, 2)
+
+      assert pattern.red == [
+               {1, 250},
+               {1, 0},
+               {0, 250},
+               {0, 0},
+               {1, 250},
+               {1, 0},
+               {0, 250},
+               {0, 0},
+               {0, 2000},
+               {0, 0}
+             ]
+
+      assert pattern.green == [{0, 3_600_000}, {0, 0}]
+      assert pattern.blue == [{0, 3_600_000}, {0, 0}]
+
+      assert pattern.duration == :infinity
+    end
+
+    test "custom blink out 5" do
+      pattern =
+        Effects.number_blink(:cyan, 5,
+          blink_on_duration: 50,
+          blink_off_duration: 200,
+          inter_number_delay: 3000
+        )
+
+      expected_pattern = [
+        {1, 50},
+        {1, 0},
+        {0, 200},
+        {0, 0},
+        {1, 50},
+        {1, 0},
+        {0, 200},
+        {0, 0},
+        {1, 50},
+        {1, 0},
+        {0, 200},
+        {0, 0},
+        {1, 50},
+        {1, 0},
+        {0, 200},
+        {0, 0},
+        {1, 50},
+        {1, 0},
+        {0, 200},
+        {0, 0},
+        {0, 3000},
+        {0, 0}
+      ]
+
+      assert pattern.red == [{0, 3_600_000}, {0, 0}]
+      assert pattern.green == expected_pattern
+      assert pattern.blue == expected_pattern
+
+      assert pattern.duration == :infinity
+    end
+
+    test "description" do
+      pattern = Effects.number_blink(:green, 10)
+      assert Program.text_description(pattern) == "Blink green 10 times"
+    end
+  end
 end
