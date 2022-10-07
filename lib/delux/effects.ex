@@ -162,7 +162,7 @@ defmodule Delux.Effects do
   * `:inter_number_delay` - the amount of milliseconds to wait in between
     blinking out the count (defaults to 2000 ms)
   * `:blink_on_duration` - how long to keep the LED on when blinking (defaults to 250 ms)
-  * `:blink_off_duration` - how long to keep the LED on when blinking (defaults to 250 ms)
+  * `:blink_off_duration` - how long to keep the LED off when blinking (defaults to 250 ms)
   """
   @spec number_blink(RGB.color(), 1..20, number_blink_options()) :: Program.t()
   def number_blink(c, count, options \\ []) when count >= 1 and count <= 20 do
