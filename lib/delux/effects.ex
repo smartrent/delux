@@ -10,9 +10,9 @@ defmodule Delux.Effects do
   @long_time 3_600_000
 
   @typedoc """
-  Option effects (none yet)
+  Options for all effects (none yet)
   """
-  @type options() :: []
+  @type common_options() :: []
 
   @doc """
   All LEDs off
@@ -31,7 +31,7 @@ defmodule Delux.Effects do
   @doc """
   Set an indicator to the specified color
   """
-  @spec on(RGB.color(), options()) :: Program.t()
+  @spec on(RGB.color(), common_options()) :: Program.t()
   def on(c, _options \\ []) do
     {r, g, b} = RGB.new(c)
 
@@ -50,7 +50,7 @@ defmodule Delux.Effects do
   This returns a pattern that blinks the specified color at a 50% duty cycle.
   The pattern starts on and then goes off.
   """
-  @spec blink(RGB.color(), number(), options()) :: Program.t()
+  @spec blink(RGB.color(), number(), common_options()) :: Program.t()
   def blink(c, frequency, _options \\ []) do
     {r, g, b} = RGB.new(c)
 
@@ -70,7 +70,7 @@ defmodule Delux.Effects do
   20 ms. The Effects is a quick flash of light that can be used to show
   feedback to a button. Total duration of the Effects is 40 ms.
   """
-  @spec blip(RGB.color(), RGB.color(), options()) :: Program.t()
+  @spec blip(RGB.color(), RGB.color(), common_options()) :: Program.t()
   def blip(c1, c2, _options \\ []) do
     {r1, g1, b1} = RGB.new(c1)
     {r2, g2, b2} = RGB.new(c2)
@@ -89,7 +89,7 @@ defmodule Delux.Effects do
 
   Colors are shown with equal duration determined from the specified frequency.
   """
-  @spec cycle([RGB.color()], number(), options()) :: Program.t()
+  @spec cycle([RGB.color()], number(), common_options()) :: Program.t()
   def cycle(colors, frequency, _options \\ [])
       when is_list(colors) and frequency > 0 and frequency < 20 do
     {reds, greens, blues} = colors |> Enum.map(&RGB.new/1) |> unzip3()
@@ -142,6 +142,50 @@ defmodule Delux.Effects do
       description: "waveform",
       duration: :infinity
     }
+  end
+
+  @typedoc false
+  @type number_blink_options() :: [
+          blink_on_duration: pos_integer(),
+          blink_off_duration: pos_integer(),
+          inter_number_delay: pos_integer()
+        ]
+
+  @doc """
+  Blink out a number
+
+  This returns a pattern that blinks out a number. It's good for
+  communicating small numbers to viewers. It repeats.
+
+  Options:
+
+  * `:inter_number_delay` - the amount of milliseconds to wait in between
+    blinking out the count (defaults to 2000 ms)
+  * `:blink_on_duration` - how long to keep the LED on when blinking (defaults to 250 ms)
+  * `:blink_off_duration` - how long to keep the LED off when blinking (defaults to 250 ms)
+  """
+  @spec number_blink(RGB.color(), 1..20, number_blink_options()) :: Program.t()
+  def number_blink(c, count, options \\ []) when count >= 1 and count <= 20 do
+    {r, g, b} = RGB.new(c)
+
+    on = Keyword.get(options, :blink_on_duration, 250)
+    off = Keyword.get(options, :blink_off_duration, 250)
+    inter = Keyword.get(options, :inter_number_delay, 2000)
+
+    %Program{
+      red: led_number_blink(r, count, on, off, inter),
+      green: led_number_blink(g, count, on, off, inter),
+      blue: led_number_blink(b, count, on, off, inter),
+      description: ["Blink ", RGB.to_ansidata(c, ""), " #{count} times"],
+      duration: :infinity
+    }
+  end
+
+  defp led_number_blink(0, _count, _on, _off, _inter), do: led_off()
+
+  defp led_number_blink(b, count, on_time, off_time, inter) do
+    [List.duplicate([{b, on_time}, {b, 0}, {0, off_time}, {0, 0}], count), {0, inter}, {0, 0}]
+    |> List.flatten()
   end
 
   defp unzip3(tuples, acc \\ {[], [], []})
