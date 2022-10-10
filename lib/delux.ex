@@ -8,8 +8,8 @@ defmodule Delux do
   alias Delux.Glue
   alias Delux.Program
 
-  @default_priority :status
-  @default_priorities [:status, :notification, :user_feedback]
+  @default_slot :status
+  @default_slots [:status, :notification, :user_feedback]
 
   @default_indicator :default
   @default_indicator_config %{default: %{}}
@@ -17,16 +17,16 @@ defmodule Delux do
   @default_led_path "/sys/class/leds"
 
   @typedoc """
-  Priority of an indicator program
+  A name of a slot for an indicator program
 
-  Priorities determine which program is rendered when more than one can be
-  shown at the same time. The default priority is `:status` which is also the
-  lowest priority. The `:notification` and `:user_feedback` priorities are
-  higher. For example, rendering visual feedback to the user pressing a button
-  can be assigned to the `:user_feedback` priority so the user knows that the
+  Slots determine which program is rendered when more than one can be
+  shown at the same time. The default slot is `:status` which is also the
+  lowest priority slot. The `:notification` and `:user_feedback` slots are
+  higher priority. For example, rendering visual feedback to the user pressing a button
+  can be assigned to the `:user_feedback` slot so the user knows that the
   button pressed worked regardless of what else is happening.
   """
-  @type priority() :: atom()
+  @type slot() :: atom()
 
   @typedoc """
   The name for one indicator
@@ -56,13 +56,13 @@ defmodule Delux do
   Delux configuration options
 
   * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
-  * `:priorities` - a list of priority atoms from lowest to highest. Defaults to `[:status, :notification, :user_feedback]`
+  * `:slots` - a list of slot atoms from lowest to highest priority. Defaults to `[:status, :notification, :user_feedback]`
   * `:indicators` - a map of indicator names to their configurations
   * `:name` - register the Delux GenServer using this name. Defaults to `Delux`. Specify `nil` to not register a name.
   """
   @type options() :: [
           led_path: String.t(),
-          priorities: [priority()],
+          slots: [slot()],
           indicators: %{indicator_name() => indicator_config()},
           name: atom() | nil
         ]
@@ -87,63 +87,62 @@ defmodule Delux do
   @doc """
   Helper for rendering a program when using Delux's defaults
 
-  This calls `render/3` using the default Delux GenServer and default priority.
+  This calls `render/3` using the default Delux GenServer and default slot.
   """
   @spec render(%{indicator_name() => Program.t() | nil} | Program.t() | nil) :: :ok
   def render(program) when is_map(program) or is_nil(program) do
-    render(__MODULE__, program, @default_priority)
+    render(__MODULE__, program, @default_slot)
   end
 
   @doc """
-  Helper for rendering a program at a priority
+  Helper for rendering a program to a slot
 
   This calls `render/3` using the default Delux GenServer.
   """
-  @spec render(%{indicator_name() => Program.t() | nil} | Program.t() | nil, priority()) :: :ok
-  def render(program, priority) when (is_map(program) or is_nil(program)) and is_atom(priority) do
-    render(__MODULE__, program, priority)
+  @spec render(%{indicator_name() => Program.t() | nil} | Program.t() | nil, slot()) :: :ok
+  def render(program, slot) when (is_map(program) or is_nil(program)) and is_atom(slot) do
+    render(__MODULE__, program, slot)
   end
 
   @doc """
   Update one or more indicators to a new program
 
-  Passing `nil` for the program removes the program running at the specified
-  priority. This is the same as calling `clear/2`.
+  Passing `nil` for the program removes the program running in the specified
+  slot. This is the same as calling `clear/2`.
   """
   @spec render(
           GenServer.server(),
           %{indicator_name() => Program.t() | nil} | Program.t() | nil,
-          priority()
+          slot()
         ) :: :ok
 
-  def render(server, %Program{} = program, priority) when is_atom(priority) do
+  def render(server, %Program{} = program, slot) when is_atom(slot) do
     with {:error, reason} <-
-           GenServer.call(server, {:render, priority, %{@default_indicator => program}}) do
+           GenServer.call(server, {:render, slot, %{@default_indicator => program}}) do
       raise reason
     end
   end
 
-  def render(server, indicator_program_map, priority)
-      when is_map(indicator_program_map) and is_atom(priority) do
+  def render(server, indicator_program_map, slot)
+      when is_map(indicator_program_map) and is_atom(slot) do
     with {:error, reason} <-
-           GenServer.call(server, {:render, priority, indicator_program_map}) do
+           GenServer.call(server, {:render, slot, indicator_program_map}) do
       raise reason
     end
   end
 
-  def render(server, nil, priority) when is_atom(priority) do
-    clear(server, priority)
+  def render(server, nil, slot) when is_atom(slot) do
+    clear(server, slot)
   end
 
   @doc """
-  Clear out any programs set at the specified priority
+  Clear out all programs in the specified slot
 
-  If this means that no programs at any priority are set, the indicator is
-  turned off.
+  The indicator is turned off if there are no programs in any slot.
   """
-  @spec clear(GenServer.server(), priority()) :: :ok
-  def clear(server \\ __MODULE__, priority \\ @default_priority) when is_atom(priority) do
-    with {:error, reason} <- GenServer.call(server, {:clear, priority}) do
+  @spec clear(GenServer.server(), slot()) :: :ok
+  def clear(server \\ __MODULE__, slot \\ @default_slot) when is_atom(slot) do
+    with {:error, reason} <- GenServer.call(server, {:clear, slot}) do
       raise reason
     end
   end
@@ -209,17 +208,17 @@ defmodule Delux do
   @typedoc false
   @type state() :: %{
           glue: %{indicator_name() => Glue.state()},
-          priorities: [priority()],
+          slots: [slot()],
           brightness: 0..100,
-          active: %{priority() => %{indicator_name() => Program.t()}},
+          active: %{slot() => %{indicator_name() => Program.t()}},
           all_off: %{indicator_name() => Program.t()},
-          timers: %{priority() => {reference(), reference()}},
+          timers: %{slot() => {reference(), reference()}},
           indicator_names: [indicator_name()]
         }
 
   @impl GenServer
   def init(options) do
-    priorities = options[:priorities] || @default_priorities
+    slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
     led_path = options[:led_path] || @default_led_path
 
@@ -229,7 +228,7 @@ defmodule Delux do
     state = %{
       glue: open_indicators(led_path, indicator_configs),
       indicator_names: Map.keys(indicator_configs),
-      priorities: priorities,
+      slots: slots,
       active: %{},
       brightness: 100,
       all_off: Map.new(all_off),
@@ -242,15 +241,15 @@ defmodule Delux do
   end
 
   @impl GenServer
-  def handle_call({:render, priority, indicators}, _from, state) do
-    case do_render(state, priority, indicators) do
+  def handle_call({:render, slot, indicators}, _from, state) do
+    case do_render(state, slot, indicators) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:clear, priority}, _from, state) do
-    case do_clear(state, priority) do
+  def handle_call({:clear, slot}, _from, state) do
+    case do_clear(state, slot) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       error -> {:reply, error, state}
     end
@@ -293,30 +292,29 @@ defmodule Delux do
     current_mapping |> Map.merge(new_mapping) |> remove_nil_values()
   end
 
-  defp do_render(state, priority, indicators) do
-    with :ok <- check_priority(priority, state),
+  defp do_render(state, slot, indicators) do
+    with :ok <- check_slot(slot, state),
          :ok <- check_indicator_programs(indicators, state) do
-      merged_indicators = merge_indicator_program(Map.get(state.active, priority), indicators)
+      merged_indicators = merge_indicator_program(Map.get(state.active, slot), indicators)
 
-      new_active = Map.put(state.active, priority, merged_indicators)
+      new_active = Map.put(state.active, slot, merged_indicators)
       new_state = %{state | active: new_active}
 
       refresh_indicators(new_state)
 
-      new_timers = start_timer(state.timers, priority, merged_indicators)
+      new_timers = start_timer(state.timers, slot, merged_indicators)
 
       {:ok, %{new_state | timers: new_timers}}
     end
   end
 
-  defp check_priority(priority, state) do
-    if priority in state.priorities do
+  defp check_slot(slot, state) do
+    if slot in state.slots do
       :ok
     else
       {:error,
        %ArgumentError{
-         message:
-           "Invalid priority #{inspect(priority)}. Valid priorities: #{inspect(state.priorities)}"
+         message: "Invalid slot #{inspect(slot)}. Valid slots: #{inspect(state.slots)}"
        }}
     end
   end
@@ -344,15 +342,15 @@ defmodule Delux do
     Enum.max(durations)
   end
 
-  defp start_timer(timers, priority, indicators) do
+  defp start_timer(timers, slot, indicators) do
     duration = find_max_duration(indicators)
 
     if duration != :infinity do
       ref = make_ref()
 
-      timer_ref = Process.send_after(self(), {:clear, priority, ref}, duration)
+      timer_ref = Process.send_after(self(), {:clear, slot, ref}, duration)
 
-      case Map.get(timers, priority) do
+      case Map.get(timers, slot) do
         {old_timer_ref, _ref} ->
           _ = Process.cancel_timer(old_timer_ref)
           :ok
@@ -361,15 +359,15 @@ defmodule Delux do
           :ok
       end
 
-      Map.put(timers, priority, {timer_ref, ref})
+      Map.put(timers, slot, {timer_ref, ref})
     else
       timers
     end
   end
 
-  defp do_clear(state, priority) do
-    with :ok <- check_priority(priority, state) do
-      new_active = Map.delete(state.active, priority)
+  defp do_clear(state, slot) do
+    with :ok <- check_slot(slot, state) do
+      new_active = Map.delete(state.active, slot)
       new_state = %{state | active: new_active}
 
       refresh_indicators(new_state)
@@ -380,8 +378,8 @@ defmodule Delux do
 
   @spec summarize_programs(state()) :: %{indicator_name() => Program.t()}
   defp summarize_programs(state) do
-    Enum.reduce(state.priorities, state.all_off, fn priority, acc ->
-      case Map.fetch(state.active, priority) do
+    Enum.reduce(state.slots, state.all_off, fn slot, acc ->
+      case Map.fetch(state.active, slot) do
         {:ok, indicator_programs} -> Map.merge(acc, indicator_programs)
         :error -> acc
       end
@@ -397,11 +395,11 @@ defmodule Delux do
   end
 
   @impl GenServer
-  def handle_info({:clear, priority, ref}, state) do
-    case Map.get(state.timers, priority) do
+  def handle_info({:clear, slot, ref}, state) do
+    case Map.get(state.timers, slot) do
       {_timer_ref, ^ref} ->
-        new_timers = Map.delete(state.timers, priority)
-        new_active = Map.delete(state.active, priority)
+        new_timers = Map.delete(state.timers, slot)
+        new_active = Map.delete(state.active, slot)
         new_state = %{state | active: new_active, timers: new_timers}
 
         refresh_indicators(new_state)

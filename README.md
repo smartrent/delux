@@ -35,10 +35,10 @@ Before diving in, some terminology is needed:
   indicator.
 * Pattern - a low-level sequence of brightness and duration tuples for
   controlling one LED
-* Program priority - a user-provided name that determines which program is run
-  when multiple are scheduled. For example, a program that gives the user
-  feedback for pressing a button could take precedence over a program showing
-  network connection status
+* Slot - a holder for a program. Slots are ordered so a program put in a higher
+  priority slot will take precedence over one in a lower priority slot. For
+  example, if there's a UI feedback slot and a network status slot, programs
+  running in the UI feedback slot could take precedence.
 
 To give a flavor of how `delux` works, here's an example that configures `delux`
 with one green LED and then blinks it at 2 Hz:
@@ -53,7 +53,7 @@ green at 2 Hz
 This starts Delux with one indicator, `:default`, that has a green LED known to
 Linux as `"led0"`. The `Delux.Effects.blink/2` function creates a 2 Hz blinking
 program for Delux to render. With nothing else specified, `Delux.render/1` runs
-the program on the default indicator at the default priority.
+the program on the default indicator in the default slot.
 
 <!-- MODULEDOC -->
 
@@ -87,27 +87,30 @@ guides. After you've found the LEDs, group them and give them indicator names.
 If you just have one indicator, call it `:default`. That will make `delux`'s API
 more convenient.
 
-Step 2 is to decide what priorities make sense for your application. Only one
+Step 2 is to decide what slots make sense for your application. Only one
 program per indicator can be run at a time. Every time that you set a program on
-an indicator, it replaces any running programs for that indicator at that
-priority. The default priorities probably suffice to start:
+an indicator, it replaces any running programs for that indicator in that
+slot. The default list of slots probably suffice to start:
 
-* `:status` - The lowest priority. This is for general device status like
+* `:status` - The lowest priority slot. This is for general device status like
   whether networking is working and if the device is initializing and connected
   to the back end.
-* `:notification` - This is a medium priority. Use it to show transient things
-  like an alert that requires operator attention to clear.
-* `:user_feedback` - This is the highest priority and for showing feedback to a
-  user. For example, it could blink the LED when user pushes a button so they
-  know that the device is doing something.
+* `:notification` - This is a medium priority slot. Use it to show transient
+  things like an alert that requires operator attention to clear.
+* `:user_feedback` - This is the highest priority slot and for showing feedback
+  to a user. For example, it could blink the LED when user pushes a button so
+  they know that the device is doing something.
 
-Clearing the program at one priority makes `delux` render the program on the
-next lower priority or if there's no program, then the indicator is turned off.
+Clearing the program in a slot makes `delux` render the program on the
+next lower priority slot or if there's no program, then the indicator is turned off.
 
-Sometimes adding priorities can remove the need to write state machine code.
+> #### Tip {: .tip}
+>
+> If you find yourself creating state machines in your code to control the
+> indicators, try adding one or more slots as an alternative.
 
-Once you feel good about the indicators and priority levels, it's time to
-configure `delux`.
+Once you feel good about the indicators and slots, it's time to configure
+`delux`.
 
 ## Configuration
 
@@ -127,7 +130,7 @@ The above configuration shows two indicators. The first is called `:default` and
 is an RGB indicator. The second is a lone red LED that's used as `:indicator2`.
 As mentioned before, if you only have one indicator, call it `:default`.
 
-Other options include setting the list of priorities and giving the `Delux`
+Other options include setting the list of slots and giving the `Delux`
 GenServer a name. If you don't give the `Delux` GenServer a name, it will
 register itself as a singleton and you won't have to pass the server name or pid
 to any of the API calls.
@@ -147,7 +150,7 @@ iex> Delux.start_link(indicators: %{
 ```
 
 After you have a `Delux` GenServer and running, call `Delux.render/1` to turn on
-the default indicator on the default priority:
+the default indicator in the default slot:
 
 ```elixir
 iex> Delux.render(Delux.Effects.on(:white))
@@ -169,7 +172,7 @@ iex> Delux.render(%{
 ```
 
 Finally, pass a second parameter to `Delux.render/2` to assign the programs to
-another priority.
+another slot.
 
 ## Creating your own programs
 

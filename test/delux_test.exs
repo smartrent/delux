@@ -71,7 +71,7 @@ defmodule DeluxTest do
   end
 
   @tag :tmp_dir
-  test "priorities", %{tmp_dir: led_dir} do
+  test "slots", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
     pid =
@@ -92,7 +92,7 @@ defmodule DeluxTest do
     assert info_as_binary(pid) == "green at 1 Hz"
     assert FakeLEDs.read_pattern(0) == "1 500 1 0 0 500 0 0 "
 
-    # Set a different the lower priority blink and check that nothing changes
+    # Set a lower priority blink and check that nothing changes
     Delux.render(pid, Delux.Effects.blink(:green, 5), :status)
     assert info_as_binary(pid) == "green at 1 Hz"
     assert FakeLEDs.read_pattern(0) == "1 500 1 0 0 500 0 0 "
@@ -200,7 +200,7 @@ defmodule DeluxTest do
   end
 
   @tag :tmp_dir
-  test "render raises on unknown priorities", %{tmp_dir: led_dir} do
+  test "render raises on unknown slots", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 1)
 
     pid =
@@ -209,7 +209,7 @@ defmodule DeluxTest do
       )
 
     assert_raise ArgumentError, fn ->
-      Delux.render(pid, Delux.Effects.on(:green), :unknown_priority)
+      Delux.render(pid, Delux.Effects.on(:green), :unknown_slot)
     end
   end
 
