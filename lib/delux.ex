@@ -15,8 +15,6 @@ defmodule Delux do
   @default_indicator :default
   @default_indicator_config %{default: %{}}
 
-  @default_led_path "/sys/class/leds"
-
   @typedoc """
   A name of a slot for an indicator program
 
@@ -224,11 +222,11 @@ defmodule Delux do
   def init(options) do
     slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
-    led_path = options[:led_path] || @default_led_path
+    glue_config = options[:glue] || []
 
     state = %{
       indicator_names: Map.keys(indicator_configs),
-      glue: open_indicators(led_path, indicator_configs),
+      glue: open_indicators(glue_config, indicator_configs),
       slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
       active: [],
       brightness: 100,
@@ -450,9 +448,11 @@ defmodule Delux do
     {:noreply, refresh_indicators(state)}
   end
 
-  defp open_indicators(led_path, indicator_configs) do
+  defp open_indicators(glue_config, indicator_configs) do
     for {name, config} <- indicator_configs, reduce: %{} do
-      acc -> Map.put(acc, name, Glue.open(led_path, config[:red], config[:green], config[:blue]))
+      acc ->
+        combined_config = Map.merge(Map.new(glue_config), Map.new(config))
+        Map.put(acc, name, Glue.open(combined_config))
     end
   end
 end

@@ -16,13 +16,27 @@ defmodule Delux.Glue do
   @typedoc false
   @type compiled() :: {nil | iodata(), nil | iodata(), nil | iodata(), Pattern.milliseconds()}
 
+  @default_led_path "/sys/class/leds"
+
   @led_off "0 3600000 0 0"
 
   @doc """
   Open and prep file handles for writing patterns
+
+  Options:
+  * `:red` - the name of the red LED if it exists
+  * `:green` - the name of the green LED if it exists
+  * `:blue` - the name of the blue LED if it exists
+  * `:led_path` - the path to the LED files if using a nonstandard path (`"/sys/class/leds"`)
   """
-  @spec open(String.t(), String.t() | nil, String.t() | nil, String.t() | nil) :: state()
-  def open(led_path, red, green, blue) do
+  @spec open(keyword() | map()) :: state()
+  def open(options) do
+    led_path = options[:led_path] || @default_led_path
+
+    red = options[:red]
+    green = options[:green]
+    blue = options[:blue]
+
     {red_handle, red_max} = init_handle(led_path, red)
     {green_handle, green_max} = init_handle(led_path, green)
     {blue_handle, blue_max} = init_handle(led_path, blue)

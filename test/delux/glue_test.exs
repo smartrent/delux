@@ -19,7 +19,7 @@ defmodule Delux.GlueTest do
   test "correctly writes to led files", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    Glue.open(led_dir, "led0", "led1", "led2")
+    Glue.open(led_path: led_dir, red: "led0", green: "led1", blue: "led2")
     |> compile_and_set(Delux.Effects.blink(:red, 5), 100, 3_600_000)
     |> Glue.close()
 
@@ -37,7 +37,7 @@ defmodule Delux.GlueTest do
     FakeLEDs.create_leds(led_dir, 255)
 
     # Only configure a green LED, but run a blinking white program
-    Glue.open(led_dir, nil, "led0", nil)
+    Glue.open(led_path: led_dir, green: "led0")
     |> compile_and_set(Delux.Effects.blink(:white, 1), 100, 3_600_000)
     |> Glue.close()
 
@@ -55,7 +55,7 @@ defmodule Delux.GlueTest do
   test "calculates duration of non-repeating patterns", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    state = Glue.open(led_dir, nil, "led0", nil)
+    state = Glue.open(led_path: led_dir, green: "led0")
 
     compile_and_set(state, Delux.Effects.blip(:green, :green), 100, 40)
 
