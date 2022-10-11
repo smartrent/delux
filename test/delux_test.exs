@@ -227,6 +227,20 @@ defmodule DeluxTest do
     end
   end
 
+  @tag :tmp_dir
+  test "info_as_ansidata raises for unknown indicator", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid =
+      start_supervised!(
+        {Delux, name: nil, led_path: led_dir, indicators: %{default: %{green: "led0"}}}
+      )
+
+    assert_raise ArgumentError, fn ->
+      Delux.info_as_ansidata(pid, :not_an_indicator)
+    end
+  end
+
   defp info_as_binary(pid, indicator \\ :default) do
     Delux.info_as_ansidata(pid, indicator) |> IO.ANSI.format(false) |> IO.iodata_to_binary()
   end
