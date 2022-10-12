@@ -19,18 +19,18 @@ user interface for an embedded hardware. This library provides:
 * Support for many physical LED configurations
 * Nice textual descriptions of what the LED is doing to support remote debug
 
-This library is primarily intended for devices with 1 to 10 LEDs. It's currently
-not for Neopixels and other "smart" LEDs that are more typically found in larger
-numbers, but could be used for a similar purpose.
+This library is primarily intended for devices with 1 to 10 LEDs. It's
+currently not for Neopixels and other "smart" LEDs that are more typically
+found in larger numbers, but could be used for a similar purpose.
 
 Before diving in, some terminology is needed:
 
 * LED - one light emitting element. This doesn't have to be an LED, but the
   Linux kernel must think that it is and show a directory for it under
   `/sys/class/leds/`.
-* Indicator - a group of 1, 2, or 3 LEDs that a user would perceive as one. This
-  could be a lone green LED, or a red, green and blue LED in one package, or any
-  combination.
+* Indicator - a group of 1, 2, or 3 LEDs that a user would perceive as one.
+  This could be a lone green LED, or a red, green and blue LED in one package,
+  or any combination.
 * Program - a one-time or repeating set of instructions for controlling an
   indicator.
 * Pattern - a low-level sequence of brightness and duration tuples for
@@ -40,8 +40,8 @@ Before diving in, some terminology is needed:
   example, if there's a UI feedback slot and a network status slot, programs
   running in the UI feedback slot could take precedence.
 
-To give a flavor of how `delux` works, here's an example that configures `delux`
-with one green LED and then blinks it at 2 Hz:
+To give a flavor of how `delux` works, here's an example that configures
+`delux` with one green LED and then blinks it at 2 Hz:
 
 ```elixir
 iex> Delux.start_link(indicators: %{default: %{green: "led0"}})
@@ -84,12 +84,12 @@ into indicators. To see what's available, list the directories in
 device tree configuration and make it appear. That's discussed somewhat below,
 but this is device-specific, so you'll need to look elsewhere for precise
 guides. After you've found the LEDs, group them and give them indicator names.
-If you just have one indicator, call it `:default`. That will make `delux`'s API
-more convenient.
+If you just have one indicator, call it `:default`. That will make `delux`'s
+API more convenient.
 
 Step 2 is to decide what slots make sense for your application. Only one
-program per indicator can be run at a time. Every time that you set a program on
-an indicator, it replaces any running programs for that indicator in that
+program per indicator can be run at a time. Every time that you set a program
+on an indicator, it replaces any running programs for that indicator in that
 slot. The default list of slots probably suffice to start:
 
 * `:status` - The lowest priority slot. This is for general device status like
@@ -101,8 +101,8 @@ slot. The default list of slots probably suffice to start:
   to a user. For example, it could blink the LED when user pushes a button so
   they know that the device is doing something.
 
-Clearing the program in a slot makes `delux` render the program on the
-next lower priority slot or if there's no program, then the indicator is turned off.
+Clearing the program in a slot makes `delux` render the program on the next
+lower priority slot or if there's no program, then the indicator is turned off.
 
 > #### Tip {: .tip}
 >
@@ -126,14 +126,15 @@ tree of your choice. The childspec looks like:
    }}
 ```
 
-The above configuration shows two indicators. The first is called `:default` and
-is an RGB indicator. The second is a lone red LED that's used as `:indicator2`.
-As mentioned before, if you only have one indicator, call it `:default`.
+The above configuration shows two indicators. The first is called `:default`
+and is an RGB indicator. The second is a lone red LED that's used as
+`:indicator2`.  As mentioned before, if you only have one indicator, call it
+`:default`.
 
 Other options include setting the list of slots and giving the `Delux`
 GenServer a name. If you don't give the `Delux` GenServer a name, it will
-register itself as a singleton and you won't have to pass the server name or pid
-to any of the API calls.
+register itself as a singleton and you won't have to pass the server name or
+pid to any of the API calls.
 
 ## Use
 
@@ -149,8 +150,8 @@ iex> Delux.start_link(indicators: %{
    })
 ```
 
-After you have a `Delux` GenServer and running, call `Delux.render/1` to turn on
-the default indicator in the default slot:
+After you have a `Delux` GenServer and running, call `Delux.render/1` to turn
+on the default indicator in the default slot:
 
 ```elixir
 iex> Delux.render(Delux.Effects.on(:white))
@@ -187,9 +188,9 @@ Each pattern is a list of `{value, duration}` tuples where `value` is a number
 from 0 to 1 and duration is an integer number of milliseconds. While `delux`
 internally holds a number from 0 (off) to 1 (full on) for the LED's value at
 that point in time, this gets scaled to an integer when sent to Linux. This
-integer depends on the maximum brightness value for an LED. This is often just 1
-since Linux can only turn the LED off and on. Sometimes Linux can set the LED to
-multiple levels and in those cases, the maximum value will be greater than 1
+integer depends on the maximum brightness value for an LED. This is often just
+1 since Linux can only turn the LED off and on. Sometimes Linux can set the LED
+to multiple levels and in those cases, the maximum value will be greater than 1
 (often 255). You don't need to worry about scaling other than to be aware that
 fractional values will be rounded when sent to Linux and this will mess up
 colors.
@@ -205,13 +206,14 @@ for more info.
 
 ## Linux kernel configuration
 
-`delux` works in all official Nerves systems. If not using Nerves, you will need
-to have `CONFIG_LEDS_TRIGGER_PATTERN=y` enabled your Linux kernel configuration.
+`delux` works in all official Nerves systems. If not using Nerves, you will
+need to have `CONFIG_LEDS_TRIGGER_PATTERN=y` enabled your Linux kernel
+configuration.
 
 The second step to using Linux's LED subsystem is to configure LEDs in the
 device tree. You can't just use an arbitrary GPIO to turn on the LED like you
-can with `Circuits.GPIO`. Linux needs to know about the GPIO. It's also possible
-to hook up PWMs and LED drivers. See the [LED
+can with `Circuits.GPIO`. Linux needs to know about the GPIO. It's also
+possible to hook up PWMs and LED drivers. See the [LED
 drivers](https://elixir.bootlin.com/linux/latest/source/drivers/leds) for
 options.
 
