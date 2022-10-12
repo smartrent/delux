@@ -44,17 +44,6 @@ defmodule Delux.PatternTest do
     end
   end
 
-  describe "to_iodata/1" do
-    test "simple conversions" do
-      assert pattern_to_binary(off_pattern()) == "0 3600000 0 0 "
-      assert pattern_to_binary(blink_2hz_pattern()) == "1 250 1 0 0 250 0 0 "
-    end
-
-    test "scaled to LED max brightness" do
-      assert pattern_to_binary(blink_2hz_pattern(), 255) == "255 250 255 0 0 250 0 0 "
-    end
-  end
-
   describe "simplify/1" do
     test "basic effects are already simple" do
       assert Pattern.simplify(off_pattern()) == off_pattern()
@@ -76,10 +65,5 @@ defmodule Delux.PatternTest do
 
       assert simplified == [{1, 0}, {5, 100}]
     end
-  end
-
-  defp pattern_to_binary(pattern, brightness \\ 1) do
-    {iodata, _duration} = Pattern.build_iodata(pattern, brightness)
-    IO.iodata_to_binary(iodata)
   end
 end
