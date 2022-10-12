@@ -46,6 +46,6 @@ defmodule Delux.RGBTest do
   defp ansidata_to_binary(ansidata, color?) do
     ansidata
     |> IO.ANSI.format(color?)
-    |> IO.iodata_to_binary()
+    |> IO.chardata_to_string()
   end
 end

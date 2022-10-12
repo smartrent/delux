@@ -207,6 +207,6 @@ defmodule DeluxTest do
   end
 
   defp info_as_binary(pid, indicator \\ :default) do
-    Delux.info_as_ansidata(pid, indicator) |> IO.ANSI.format(false) |> IO.iodata_to_binary()
+    Delux.info_as_ansidata(pid, indicator) |> IO.ANSI.format(false) |> IO.chardata_to_string()
   end
 end

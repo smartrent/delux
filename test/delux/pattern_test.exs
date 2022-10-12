@@ -73,6 +73,6 @@ defmodule Delux.PatternTest do
   end
 
   defp pattern_to_binary(pattern, brightness \\ 1) do
-    pattern |> Pattern.to_iodata(brightness) |> IO.iodata_to_binary()
+    pattern |> Pattern.to_iodata(brightness) |> IO.chardata_to_string()
   end
 end

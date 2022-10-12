@@ -28,7 +28,7 @@ defmodule Delux.Program do
   """
   @spec text_description(t()) :: String.t()
   def text_description(%__MODULE__{} = pattern) do
-    pattern.description |> IO.ANSI.format(false) |> IO.iodata_to_binary()
+    pattern.description |> IO.ANSI.format(false) |> IO.chardata_to_string()
   end
 
   @doc """
