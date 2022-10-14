@@ -204,6 +204,26 @@ See Linux's LED pattern trigger documentation at
 [leds-trigger-pattern.txt](https://elixir.bootlin.com/linux/v5.19/source/Documentation/devicetree/bindings/leds/leds-trigger-pattern.txt)
 for more info.
 
+## Timing precision
+
+The Linux kernel's `HZ` configuration sets the granularity at which Delux can
+render patterns. For example, if `HZ=100`, the timing resolution is 10 ms. The
+kernel also adds a start delay for any pattern. Delux can compensate for both
+effects to more accurately render programs. This is ultimately limited to the
+timer resolution so if the system only supports 10 ms resolution, that's the
+best that Delux can do.
+
+Delux can't automatically detect the `HZ` setting so it must be told via the
+`:backend` options:
+
+```elixir
+Delux.start_link(backend: [hz: 100], indicators: %{default: %{green: "led0"}})
+```
+
+If you need better resolution, you'l need to update the Linux kernel
+configuration with `CONFIG_HZ=1000` and rebuild. Be sure to update the `:hz`
+value passed to `Delux` so that the compensation is calculated correctly.
+
 ## Linux kernel configuration
 
 `delux` works in all official Nerves systems. If not using Nerves, you will

@@ -4,8 +4,8 @@ defmodule Delux do
              |> Enum.fetch!(1)
   use GenServer
 
+  alias Delux.Backend
   alias Delux.Effects
-  alias Delux.Glue
   alias Delux.Pattern
   alias Delux.Program
 
@@ -54,16 +54,19 @@ defmodule Delux do
   @typedoc """
   Delux configuration options
 
-  * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
-  * `:slots` - a list of slot atoms from lowest to highest priority. Defaults to `[:status, :notification, :user_feedback]`
   * `:indicators` - a map of indicator names to their configurations
+  * `:slots` - a list of slot atoms from lowest to highest priority. Defaults to `[:status, :notification, :user_feedback]`
   * `:name` - register the Delux GenServer using this name. Defaults to `Delux`. Specify `nil` to not register a name.
+  * `:backend` - options for the backend
+    * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
+    * `:hz` - the Linux kernel's `HZ` setting. Delux will adjust its timing based on this setting (defaults to 1000)
   """
   @type options() :: [
           led_path: String.t(),
           slots: [slot()],
           indicators: %{indicator_name() => indicator_config()},
-          name: atom() | nil
+          name: atom() | nil,
+          backend: keyword()
         ]
 
   @doc """
@@ -210,7 +213,7 @@ defmodule Delux do
   @typedoc false
   @type state() :: %{
           indicator_names: [indicator_name()],
-          glue: %{indicator_name() => Glue.state()},
+          backend: %{indicator_name() => Backend.state()},
           slot_to_priority: %{slot() => non_neg_integer()},
           brightness: 0..100,
           active: [entry()],
@@ -222,11 +225,11 @@ defmodule Delux do
   def init(options) do
     slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
-    glue_config = options[:glue] || []
+    backend_config = options[:backend] || []
 
     state = %{
       indicator_names: Map.keys(indicator_configs),
-      glue: open_indicators(glue_config, indicator_configs),
+      backend: open_indicators(backend_config, indicator_configs),
       slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
       active: [],
       brightness: 100,
@@ -415,30 +418,33 @@ defmodule Delux do
       _ ->
         # Different entry than what's currently running
         {_priority, start_time, _indicator, program} = entry
-        indicator_state = state.glue[indicator_name]
-        compiled = Glue.compile_program!(indicator_state, program, state.brightness)
+        indicator_state = state.backend[indicator_name]
+        compiled = Backend.compile(indicator_state, program, state.brightness)
 
-        {new_indicator_state, time_left} =
-          Glue.set_program(indicator_state, compiled, start_time - current_time)
+        time_left = Backend.run(indicator_state, compiled, start_time - current_time)
 
-        if time_left <= 0 do
-          # Timed out entry, so try again
-          new_state = %{
-            state
-            | active: pop_entry(state.active, indicator_name),
-              current: Map.delete(state.current, indicator_name),
-              glue: Map.put(state.glue, indicator_name, new_indicator_state)
-          }
+        cond do
+          time_left <= 0 ->
+            # Timed out entry, so try again
+            new_state = %{
+              state
+              | active: pop_entry(state.active, indicator_name),
+                current: Map.delete(state.current, indicator_name)
+            }
 
-          refresh_indicator(new_state, indicator_name, current_time)
-        else
-          end_time = current_time + time_left
+            refresh_indicator(new_state, indicator_name, current_time)
 
-          %{
-            state
-            | refresh_time: min(state.refresh_time, end_time),
-              current: Map.put(state.current, indicator_name, {entry, end_time})
-          }
+          time_left == :infinity ->
+            %{state | current: Map.put(state.current, indicator_name, {entry, :infinity})}
+
+          true ->
+            end_time = current_time + time_left
+
+            %{
+              state
+              | refresh_time: min(state.refresh_time, end_time),
+                current: Map.put(state.current, indicator_name, {entry, end_time})
+            }
         end
     end
   end
@@ -448,11 +454,11 @@ defmodule Delux do
     {:noreply, refresh_indicators(state)}
   end
 
-  defp open_indicators(glue_config, indicator_configs) do
+  defp open_indicators(backend_config, indicator_configs) do
     for {name, config} <- indicator_configs, reduce: %{} do
       acc ->
-        combined_config = Map.merge(Map.new(glue_config), Map.new(config))
-        Map.put(acc, name, Glue.open(combined_config))
+        combined_config = Map.merge(Map.new(backend_config), Map.new(config))
+        Map.put(acc, name, Backend.open(combined_config))
     end
   end
 end

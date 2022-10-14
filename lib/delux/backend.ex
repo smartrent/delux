@@ -1,4 +1,4 @@
-defmodule Delux.Glue do
+defmodule Delux.Backend do
   @moduledoc false
 
   alias Delux.Pattern
@@ -66,8 +66,8 @@ defmodule Delux.Glue do
   @doc """
   Compile an indicator program so that it can be run efficiently later
   """
-  @spec compile_program!(state(), Program.t(), 0..100) :: compiled()
-  def compile_program!(%{} = state, %Program{} = program, percent) do
+  @spec compile(state(), Program.t(), 0..100) :: compiled()
+  def compile(%{} = state, %Program{} = program, percent) do
     # Process the patterns for brightness adjustments and convert to iodata
     {r, r_duration} =
       maybe_prep_iodata(state.red, program.red, percent, state.red_max, state.comp, program.mode)
@@ -94,30 +94,32 @@ defmodule Delux.Glue do
 
     duration =
       case program.mode do
-        :simple_loop ->
-          Pattern.forever_ms()
-
-        :one_shot ->
-          # First LED to finish is the duration
-          min(min(r_duration, g_duration), b_duration)
+        :simple_loop -> :infinity
+        :one_shot -> min(min(r_duration, g_duration), b_duration)
       end
 
     {r, g, b, duration}
   end
 
   @doc """
-  Run the program
+  Run a compiled program at the specified time offset
+
+  This returns the amount of time left.
+
+  NOTE: Specifying a time offset isn't supported yet.
   """
-  @spec set_program(state(), compiled(), Pattern.milliseconds()) ::
-          {state(), Pattern.milliseconds()}
-  def set_program(%{} = state, {r, g, b, duration}, _time_offset) do
+  @spec run(state(), compiled(), Pattern.milliseconds()) :: Pattern.milliseconds() | :infinity
+  def run(%{} = state, {r, g, b, duration}, _time_offset) do
     # Write RGB as close together as possible to keep them close to in sync
     maybe_write!(state.red, r)
     maybe_write!(state.green, g)
     maybe_write!(state.blue, b)
 
-    {state, duration}
+    duration
   end
+
+  defp maybe_write!(nil, _data), do: :ok
+  defp maybe_write!(handle, data), do: :ok = IO.binwrite(handle, data)
 
   defp maybe_prep_iodata(nil, _sequence, _percent, _max_brightness, _res, _mode),
     do: {nil, Pattern.forever_ms()}
@@ -195,9 +197,6 @@ defmodule Delux.Glue do
 
   defp append_trailer({iodata, duration}, :one_shot), do: {[iodata, @led_off], duration}
   defp append_trailer(iodata_and_duration, _), do: iodata_and_duration
-
-  defp maybe_write!(nil, _data), do: :ok
-  defp maybe_write!(handle, data), do: :ok = IO.binwrite(handle, data)
 
   @doc """
   Free resources

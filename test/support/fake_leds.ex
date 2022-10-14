@@ -37,7 +37,7 @@ defmodule Delux.Support.FakeLEDs do
   @spec read_pattern(non_neg_integer()) :: binary()
   def read_pattern(index) do
     # This is a little tricky since tests must read the pattern
-    # after every time it's set. This is due to how the glue code
+    # after every time it's set. This is due to how the backend code
     # to Linux just keeps appending to the magic file to set patterns,
     # but our simulation doesn't truncate the file after every write.
     handle = Process.get({__MODULE__, index})

@@ -17,7 +17,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert info_as_binary(pid, :default) == "off"
@@ -45,7 +45,7 @@ defmodule DeluxTest do
       start_supervised!(
         {Delux,
          name: nil,
-         glue: [led_path: led_dir, hz: 0],
+         backend: [led_path: led_dir, hz: 0],
          indicators: %{default: %{red: "led0", green: "led1", blue: "led2"}}}
       )
 
@@ -78,7 +78,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
@@ -117,7 +117,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
@@ -144,7 +144,7 @@ defmodule DeluxTest do
       start_supervised!(
         {Delux,
          name: nil,
-         glue: [led_path: led_dir, hz: 0],
+         backend: [led_path: led_dir, hz: 0],
          indicators: %{
            default: %{red: "led0", green: "led1", blue: "led2"},
            indicator2: %{red: "led3", green: "led4", blue: "led5"}
@@ -213,7 +213,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert_raise ArgumentError, fn ->
@@ -228,7 +228,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert_raise ArgumentError, fn ->
@@ -243,7 +243,7 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: nil, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: nil, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert_raise ArgumentError, fn ->
@@ -265,7 +265,7 @@ defmodule DeluxTest do
 
     pid =
       start_supervised!(
-        {Delux, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+        {Delux, backend: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
       )
 
     assert Process.whereis(Delux) == pid
@@ -298,7 +298,9 @@ defmodule DeluxTest do
     pid =
       start_supervised!(
         {Delux,
-         name: MyDelux, glue: [led_path: led_dir, hz: 0], indicators: %{default: %{green: "led0"}}}
+         name: MyDelux,
+         backend: [led_path: led_dir, hz: 0],
+         indicators: %{default: %{green: "led0"}}}
       )
 
     assert Process.whereis(MyDelux) == pid
