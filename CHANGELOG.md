@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.4.0 - 2022-10-14
+
+This is a big update that improves program playback timing to compensate for
+the Linux kernel's HZ configuration and implementation of LED pattern triggers.
+This affects all programs, but you probably won't notice it unless you're
+creating Morse code patterns or measuring LED output with a logic analyzer.
+
+* Backwards incompatible changes
+  * "Priority" is now called "slot". If you have custom priorities defined in
+    your configurations, you will need to change them to `slot`. This change
+    was made to make the use of this feature easier to explain. I.e. programs
+    are put in slots, one program per slot per indicator, slots have an order.
+
+* Changes
+  * Added `:backend` parameters and specifically the `:hz` parameter to support
+    better playback timing. If unset, HZ=1000 is assumed. This results in
+    almost the same timings as earlier versions. See the README for more
+    information.
+  * Added `Delux.Effects.number_blink/3` for blinking out a number. This is for
+    things like error codes - like error 1, 2, 3, etc.
+  * Added `Delux.Effects.timing_test/2` to debug timing precision issues with a
+    logic analyzer.
+  * Removed unnecessary writes to the filesystem when using multiple
+    indicators. This fixes an issue where a change on one indicator restarts a
+    program on a second indicator.
+  * Reorganized the backend code to support future alternative backends. This is
+    currently unplanned work, but it's now easier to think about adding a way to
+    run Delux using Circuits.GPIO or a simulated LED.
+
 ## v0.3.1 - 2022-09-26
 
 * Changes
