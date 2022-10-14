@@ -185,13 +185,13 @@ defmodule Delux.Backend do
   @spec hz_comp_250(pos_integer()) :: {pos_integer(), pos_integer()}
   def hz_comp_250(0), do: {0, 0}
   def hz_comp_250(duration) when duration < 7, do: {1, 8}
-  def hz_comp_250(duration), do: {duration - 6, 4 + :math.ceil((duration - 6) / 4) * 4}
+  def hz_comp_250(duration), do: {duration - 6, div(duration - 6 + 7, 4) * 4}
 
   @doc false
   @spec hz_comp_100(pos_integer()) :: {pos_integer(), pos_integer()}
   def hz_comp_100(0), do: {0, 0}
   def hz_comp_100(duration) when duration < 16, do: {1, 20}
-  def hz_comp_100(duration), do: {duration - 15, 10 + :math.ceil((duration - 15) / 10) * 10}
+  def hz_comp_100(duration), do: {duration - 15, div(duration - 15 + 19, 10) * 10}
 
   defp hz_comp_none(duration), do: {duration, duration}
 
