@@ -224,6 +224,15 @@ If you need better resolution, you'l need to update the Linux kernel
 configuration with `CONFIG_HZ=1000` and rebuild. Be sure to update the `:hz`
 value passed to `Delux` so that the compensation is calculated correctly.
 
+To verify timing, connect a logic analyzer to an LED controlled by Delux and
+run this:
+
+```elixir
+Delux.render(Delux.Effects.timing_test(:on))
+```
+
+See `Delux.Effects.timing_test/2` for details on what you should see.
+
 ## Linux kernel configuration
 
 `delux` works in all official Nerves systems. If not using Nerves, you will

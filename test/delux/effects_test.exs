@@ -226,4 +226,32 @@ defmodule Delux.EffectsTest do
       assert Program.text_description(pattern) == "Blink green 10 times"
     end
   end
+
+  describe "timing_test/3" do
+    test "build a timing test" do
+      pattern = Effects.timing_test(:red)
+
+      {header, middle} = Enum.split(pattern.red, 2)
+      {middle, trailer} = Enum.split(middle, -2)
+
+      # starts and ends with 100 ms
+      assert header == [{1, 100}, {1, 0}]
+      assert trailer == [{1, 100}, {1, 0}]
+
+      # middle only has 10 ms off times
+      assert Enum.any?(middle, fn {x, duration} ->
+               x == 0 and (duration != 0 or duration != 10)
+             end)
+
+      assert pattern.green == [{0, 3_600_000}, {0, 0}]
+      assert pattern.blue == [{0, 3_600_000}, {0, 0}]
+
+      assert pattern.mode == :one_shot
+    end
+
+    test "description" do
+      pattern = Effects.timing_test(:red)
+      assert Program.text_description(pattern) == "Timing test pattern in red"
+    end
+  end
 end

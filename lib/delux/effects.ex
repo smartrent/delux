@@ -83,6 +83,90 @@ defmodule Delux.Effects do
   end
 
   @doc """
+  Create a program to verify timing
+
+  If you're unsure about the playback timing on your device, hook up a logic
+  analyzer to an LED and capture the waveform. Here's what you should see:
+
+  1. 100 ms on
+  2. 10 ms off
+  3. 1 ms on
+  4. 10 ms off
+  5. 2 ms on
+  6. 10 ms off
+  7. 3 ms on
+  8. 10 ms off
+  9. 5 ms on
+  10. 10 ms off
+  11. 8 ms on
+  12. 10 ms off
+  13. 13 ms on
+  14. 10 ms off
+  15. 100 ms on
+  16. off
+
+  Look at the following in the capture:
+
+  1. Do the 1, 2, 3, 5 ms captures match what you'd expect based on your
+     kernel's HZ setting. For example, if HZ=100, they should all be 10 ms long.
+     If not, check the :hz setting for Delux.
+  2. Does the length of the final 100 ms on time match the first. If not,
+     Delux might be calculating the duration wrong and cutting off the program
+     prematurely. This is likely due to an incorrect :hz setting.
+
+  If something still isn't right, please submit an issue with the captured
+  waveform and any other hints you may have to reproduce.
+  """
+  @spec timing_test(RGB.color(), common_options()) :: Program.t()
+  def timing_test(c, _options \\ []) do
+    {r, g, b} = RGB.new(c)
+
+    %Program{
+      red: led_timing(r),
+      green: led_timing(g),
+      blue: led_timing(b),
+      description: ["Timing test pattern in ", RGB.to_ansidata(c)],
+      mode: :one_shot
+    }
+  end
+
+  defp led_timing(0), do: led_off()
+
+  defp led_timing(b),
+    do: [
+      {b, 100},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 1},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 2},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 3},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 5},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 8},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 13},
+      {b, 0},
+      {0, 10},
+      {0, 0},
+      {b, 100},
+      {b, 0}
+    ]
+
+  @doc """
   Cycle between colors
 
   Colors are shown with equal duration determined from the specified frequency.
