@@ -66,7 +66,12 @@ defmodule Delux.Morse do
   @type options() :: [words_per_minute: number()]
 
   @doc """
-  Convert a string to an indicator program
+  Convert a text string to Morse code
+
+  Programs created by this function require more precise timing than most
+  effects. Linux's HZ configuration setting can limit timer precision for
+  blinking LEDs to 10 ms (HZ=100). Please see the README.md for more
+  information and how to configure Delux to partially compensate.
 
   Options:
 
