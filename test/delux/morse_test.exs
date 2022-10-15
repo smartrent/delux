@@ -70,4 +70,22 @@ defmodule Delux.MorseTest do
     assert p.mode == :one_shot
     assert Program.text_description(p) == "Morse code: E E E"
   end
+
+  test "looping a message" do
+    p = Morse.encode(:red, "T", words_per_minute: 20, loop?: true)
+
+    # -
+    assert p.red == [
+             {1, 180},
+             {1, 0},
+             {0, 420},
+             {0, 0}
+           ]
+
+    assert p.green == [{0, 600}, {0, 0}]
+    assert p.blue == [{0, 600}, {0, 0}]
+
+    assert p.mode == :simple_loop
+    assert Program.text_description(p) == "Morse code: T"
+  end
 end

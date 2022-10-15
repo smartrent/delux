@@ -63,7 +63,7 @@ defmodule Delux.Morse do
     ?@ => ".--.-."
   }
 
-  @type options() :: [words_per_minute: number()]
+  @type options() :: [words_per_minute: number(), loop?: boolean()]
 
   @doc """
   Convert a text string to Morse code
@@ -76,12 +76,14 @@ defmodule Delux.Morse do
   Options:
 
   * `:words_per_minute` - the rate at which to send the message
+  * `:loop?` - set to `true` to repeat the message (defaults to `false`)
   """
   @spec encode(RGB.color(), String.t(), options()) :: Program.t()
   def encode(c, string, options \\ []) do
     {r, g, b} = RGB.new(c)
 
     words_per_minute = options[:words_per_minute] || @default_words_per_minute
+    loop? = options[:loop?] || false
 
     if words_per_minute < 1 or words_per_minute > 100 do
       raise ArgumentError, "Invalid :words_per_minute"
@@ -90,13 +92,14 @@ defmodule Delux.Morse do
     up_string = String.upcase(string, :ascii)
     base_elements = morse(up_string, words_per_minute)
     duration = duration_elements(base_elements)
+    mode = if loop?, do: :simple_loop, else: :one_shot
 
     %Program{
       red: elements(r, base_elements, duration),
       green: elements(g, base_elements, duration),
       blue: elements(b, base_elements, duration),
       description: "Morse code: #{up_string}",
-      mode: :one_shot
+      mode: mode
     }
   end
 
