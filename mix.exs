@@ -31,7 +31,8 @@ defmodule Delux.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Delux.Application, []}
     ]
   end
 

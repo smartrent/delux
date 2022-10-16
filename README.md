@@ -114,8 +114,14 @@ Once you feel good about the indicators and slots, it's time to configure
 
 ## Configuration
 
-After adding `delux` to your mix dependencies, add `Delux` to a supervision
-tree of your choice. The childspec looks like:
+After adding `delux` to your mix dependencies, you can either add `Delux` to a
+supervision tree of your choice or add a `:delux` configuration to your
+application environment (`config.exs`). The tradeoff is that having `Delux`
+start itself by specifying an application config can be really convenient, but
+adding `Delux` to your supervision tree allows runtime configuration and more
+control over failure recovery.
+
+Starting with the supervision tree approach, here's an example childspec:
 
 ```elixir
   {Delux,
@@ -126,22 +132,30 @@ tree of your choice. The childspec looks like:
    }}
 ```
 
-The above configuration shows two indicators. The first is called `:default`
-and is an RGB indicator. The second is a lone red LED that's used as
-`:indicator2`.  As mentioned before, if you only have one indicator, call it
-`:default`.
+The above configuration shows two indicators. The first is called `:default` and
+is an RGB indicator. The second is a lone red LED that's used as `:indicator2`.
+As mentioned before, if you only have one indicator, call it `:default`.
 
-Other options include setting the list of slots and giving the `Delux`
-GenServer a name. If you don't give the `Delux` GenServer a name, it will
-register itself as a singleton and you won't have to pass the server name or
-pid to any of the API calls.
+Other options include setting the list of slots and giving the `Delux` GenServer
+a name. If you don't give the `Delux` GenServer a name, it will register itself
+as a singleton and you won't have to pass the server name or pid to any of the
+API calls.
+
+If you'd like Delux to start itself automatically, add the configuration to your
+`config.exs` or a file that it includes. Here's an example:
+
+```elixir
+config :delux,
+   indicators: %{
+     default: %{red: "led0:red", green: "led0:green", blue: "led0:blue"},
+     indicator2: %{red: "led1"}
+   }}
+```
 
 ## Use
 
-For sake of example, lets start the `Delux` GenServer the manual way by calling
-`start_link/1` directly. The usual way in your programs would be to add the
-childspec to the supervision tree as shown earlier. Modify the LED names to
-whatever you have.
+For sake of example, let's start the `Delux` GenServer the manual way by calling
+`start_link/1` directly. Modify the LED names to whatever you have.
 
 ```elixir
 iex> Delux.start_link(indicators: %{
@@ -150,8 +164,8 @@ iex> Delux.start_link(indicators: %{
    })
 ```
 
-After you have a `Delux` GenServer and running, call `Delux.render/1` to turn
-on the default indicator in the default slot:
+After you have a `Delux` GenServer and running, call `Delux.render/1` to turn on
+the default indicator in the default slot:
 
 ```elixir
 iex> Delux.render(Delux.Effects.on(:white))
