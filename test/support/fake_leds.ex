@@ -17,7 +17,7 @@ defmodule Delux.Support.FakeLEDs do
 
     Process.put({__MODULE__, :led_dir}, led_dir)
 
-    for i <- 0..5 do
+    Enum.each(0..5, fn i ->
       File.mkdir_p!(base_dir(led_dir, i))
       File.write!(trigger_path(led_dir, i), "none")
       File.write!(max_brightness_path(led_dir, i), "#{max_brightness}")
@@ -25,7 +25,9 @@ defmodule Delux.Support.FakeLEDs do
 
       handle = File.open!(pattern_path(led_dir, i), [:read, :raw])
       Process.put({__MODULE__, i}, handle)
-    end
+    end)
+
+    :ok
   end
 
   @spec read_trigger(non_neg_integer()) :: binary()
@@ -34,13 +36,32 @@ defmodule Delux.Support.FakeLEDs do
     File.read!(trigger_path(led_dir, index))
   end
 
-  @spec read_pattern(non_neg_integer()) :: binary()
+  @spec read_pattern(non_neg_integer()) :: binary() | :eof | {:error, any()}
   def read_pattern(index) do
     # This is a little tricky since tests must read the pattern
     # after every time it's set. This is due to how the backend code
     # to Linux just keeps appending to the magic file to set patterns,
     # but our simulation doesn't truncate the file after every write.
     handle = Process.get({__MODULE__, index})
-    IO.binread(handle, :all)
+    binread(handle)
+  end
+
+  if Version.match?(System.version(), "~> 1.13") do
+    defp binread(handle) do
+      case IO.binread(handle, :eof) do
+        :eof -> :eof
+        {:error, _} = error -> error
+        data -> IO.iodata_to_binary(data)
+      end
+    end
+  else
+    # Elixir 1.12 and earlier use :all and return empty strings
+    defp binread(handle) do
+      case IO.binread(handle, :all) do
+        "" -> :eof
+        {:error, _} = error -> error
+        data -> IO.iodata_to_binary(data)
+      end
+    end
   end
 end

@@ -48,8 +48,8 @@ defmodule Delux.BackendTest do
     assert FakeLEDs.read_trigger(2) == "none"
 
     assert FakeLEDs.read_pattern(0) == "255 500 255 0 0 500 0 0 "
-    assert FakeLEDs.read_pattern(1) == ""
-    assert FakeLEDs.read_pattern(2) == ""
+    assert FakeLEDs.read_pattern(1) == :eof
+    assert FakeLEDs.read_pattern(2) == :eof
   end
 
   @tag :tmp_dir

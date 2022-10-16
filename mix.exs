@@ -16,7 +16,13 @@ defmodule Delux.MixProject do
       docs: docs(),
       dialyzer: dialyzer(),
       deps: deps(),
-      preferred_cli_env: %{docs: :docs, "hex.build": :docs, "hex.publish": :docs}
+      preferred_cli_env: %{
+        docs: :docs,
+        "hex.build": :docs,
+        "hex.publish": :docs,
+        credo: :test,
+        dialyzer: :test
+      }
     ]
   end
 
@@ -32,8 +38,8 @@ defmodule Delux.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
-      {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:credo, "~> 1.5", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.1", only: :test, runtime: false},
+      {:credo, "~> 1.5", only: :test, runtime: false}
     ]
   end
 
