@@ -279,8 +279,10 @@ defmodule Delux.Effects do
   defp led_blink(0, _frequency), do: led_off()
 
   defp led_blink(b, frequency) when frequency > 0 and frequency < 20 do
-    on_time = round(500 / frequency)
-    [{b, on_time}, {b, 0}, {0, on_time}, {0, 0}]
+    period = round(1000 / frequency)
+    on_time = div(period, 2)
+    off_time = period - on_time
+    [{b, on_time}, {b, 0}, {0, off_time}, {0, 0}]
   end
 
   defp led_blink(b, frequency) when frequency >= 20, do: led_on(b)

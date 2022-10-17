@@ -67,6 +67,16 @@ defmodule Delux.EffectsTest do
       assert pattern.blue == [{0, 3_600_000}, {0, 0}]
     end
 
+    test "blink period is close" do
+      pattern = Effects.blink(:red, 3)
+
+      # 3 Hz has a ~333 ms period which isn't divisible by 2.
+      # Therefore, on and off times should be different.
+      assert pattern.red == [{1, 166}, {1, 0}, {0, 167}, {0, 0}]
+      assert pattern.green == [{0, 3_600_000}, {0, 0}]
+      assert pattern.blue == [{0, 3_600_000}, {0, 0}]
+    end
+
     test "description" do
       pattern = Effects.blink(:blue, 2)
       assert Program.text_description(pattern) == "blue at 2 Hz"
