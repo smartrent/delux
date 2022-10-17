@@ -9,6 +9,8 @@ defmodule Delux do
   alias Delux.Pattern
   alias Delux.Program
 
+  require Logger
+
   @default_slot :status
   @default_slots [:status, :notification, :user_feedback]
 
@@ -60,13 +62,19 @@ defmodule Delux do
   * `:backend` - options for the backend
     * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
     * `:hz` - the Linux kernel's `HZ` setting. Delux will adjust its timing based on this setting (defaults to 1000)
+  * `:initial` - a program or a map of indicators to programs to run on initialization. If
+    unset, then Delux turns off all indicators on initialization.
   """
   @type options() :: [
           led_path: String.t(),
           slots: [slot()],
           indicators: %{indicator_name() => indicator_config()},
           name: atom() | nil,
-          backend: keyword()
+          backend: keyword(),
+          initial:
+            Program.t()
+            | {Program.t(), slot()}
+            | {%{indicator_name() => indicator_config()}, slot()}
         ]
 
   @doc """
@@ -226,18 +234,22 @@ defmodule Delux do
     slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
     backend_config = options[:backend] || []
+    initial = options[:initial]
 
-    state = %{
-      indicator_names: Map.keys(indicator_configs),
-      backend: open_indicators(backend_config, indicator_configs),
-      slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
-      active: [],
-      brightness: 100,
-      current: %{},
-      refresh_time: :infinity
-    }
+    state =
+      %{
+        indicator_names: Map.keys(indicator_configs),
+        backend: open_indicators(backend_config, indicator_configs),
+        slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
+        active: [],
+        brightness: 100,
+        current: %{},
+        refresh_time: :infinity
+      }
+      |> initialize_indicators(initial)
+      |> refresh_indicators()
 
-    {:ok, refresh_indicators(state)}
+    {:ok, state}
   end
 
   @impl GenServer
@@ -381,6 +393,36 @@ defmodule Delux do
 
   defp pop_entry([entry | rest], indicator_name) do
     [entry | pop_entry(rest, indicator_name)]
+  end
+
+  # initialize_indicators takes options that are analogous to those passed to render/3
+  defp initialize_indicators(state, nil) do
+    state
+  end
+
+  defp initialize_indicators(state, %Program{} = program) do
+    initialize_indicators(state, {%{@default_indicator => program}, @default_slot})
+  end
+
+  defp initialize_indicators(state, {%Program{} = program, slot}) when is_atom(slot) do
+    initialize_indicators(state, {%{@default_indicator => program}, slot})
+  end
+
+  defp initialize_indicators(state, {indicators, slot})
+       when is_map(indicators) and is_atom(slot) do
+    case do_render(state, slot, indicators) do
+      {:ok, new_state} ->
+        new_state
+
+      error ->
+        Logger.error("Error initializing indicators to #{inspect(indicators)}: #{inspect(error)}")
+        state
+    end
+  end
+
+  defp initialize_indicators(state, other) do
+    Logger.error("Don't know how to initialize indicators to #{inspect(other)}")
+    state
   end
 
   defp refresh_indicators(state) do

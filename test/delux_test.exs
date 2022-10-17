@@ -1,5 +1,6 @@
 defmodule DeluxTest do
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
 
   alias Delux.Support.FakeLEDs
 
@@ -204,6 +205,85 @@ defmodule DeluxTest do
     assert FakeLEDs.read_pattern(3) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(4) == "0 3600000 0 0 "
     assert FakeLEDs.read_pattern(5) == "0 3600000 0 0 "
+  end
+
+  @tag :tmp_dir
+  test "starting with a simple initial configuration", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid =
+      start_supervised!(
+        {Delux,
+         name: nil,
+         backend: [led_path: led_dir, hz: 0],
+         indicators: %{default: %{green: "led0"}},
+         initial: Delux.Effects.blink(:green, 2)}
+      )
+
+    # Check that the LEDS were initialized
+    assert info_as_binary(pid) == "green at 2 Hz"
+    assert FakeLEDs.read_pattern(0) == "1 250 1 0 0 250 0 0 "
+  end
+
+  @tag :tmp_dir
+  test "starting with a simple initial configuration in a slot", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid =
+      start_supervised!(
+        {Delux,
+         name: nil,
+         backend: [led_path: led_dir, hz: 0],
+         indicators: %{default: %{green: "led0"}},
+         initial: {Delux.Effects.blink(:green, 4), :notification}}
+      )
+
+    # Check that the LEDS were initialized
+    assert info_as_binary(pid) == "green at 4 Hz"
+    assert FakeLEDs.read_pattern(0) == "1 125 1 0 0 125 0 0 "
+
+    # Check that clearing the slot turns it off (it's in the right slot)
+    Delux.clear(pid, :notification)
+    assert info_as_binary(pid) == "off"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
+  end
+
+  @tag :tmp_dir
+  test "starting with a full initial configuration in a slot", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    pid =
+      start_supervised!(
+        {Delux,
+         name: nil,
+         backend: [led_path: led_dir, hz: 0],
+         indicators: %{default: %{green: "led0"}},
+         initial: {%{default: Delux.Effects.blink(:green, 3)}, :notification}}
+      )
+
+    # Check that the LEDS were initialized
+    assert info_as_binary(pid) == "green at 3 Hz"
+    assert FakeLEDs.read_pattern(0) == "1 166 1 0 0 167 0 0 "
+
+    # Check that clearing the slot turns it off (it's in the right slot)
+    Delux.clear(pid, :notification)
+    assert info_as_binary(pid) == "off"
+    assert FakeLEDs.read_pattern(0) == "0 3600000 0 0 "
+  end
+
+  @tag :tmp_dir
+  test "starting a bad initial configuration logs an error", %{tmp_dir: led_dir} do
+    FakeLEDs.create_leds(led_dir, 1)
+
+    assert capture_log(fn ->
+             start_supervised!(
+               {Delux,
+                name: nil,
+                backend: [led_path: led_dir, hz: 0],
+                indicators: %{default: %{green: "led0"}},
+                initial: "hello"}
+             )
+           end) =~ "Don't know how to initialize indicators to \"hello\""
   end
 
   @tag :tmp_dir
