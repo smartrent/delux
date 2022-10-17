@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.4.1 - 2022-10-17
+
+* Changes
+  * Added support for starting Delux as an OTP application. This is triggered by
+    supplying an application configuration (see README.md). Please see
+    documentation for tradeoffs.
+  * Added support for specifying an initial configuration. The indicators no
+    longer are forced to start in the off state.
+  * Support looping Morse code sequences
+
 ## v0.4.0 - 2022-10-14
 
 This is a big update that improves program playback timing to compensate for
