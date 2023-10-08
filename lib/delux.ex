@@ -11,6 +11,8 @@ defmodule Delux do
 
   require Logger
 
+  @default_backend_config %{module: Delux.Backend.PatternTrigger}
+
   @default_slot :status
   @default_slots [:status, :notification, :user_feedback]
 
@@ -60,6 +62,7 @@ defmodule Delux do
   * `:slots` - a list of slot atoms from lowest to highest priority. Defaults to `[:status, :notification, :user_feedback]`
   * `:name` - register the Delux GenServer using this name. Defaults to `Delux`. Specify `nil` to not register a name.
   * `:backend` - options for the backend
+    * `:module` - the module that implements `Delux.Backend` (defaults to `Delux.Backend.PatternTrigger`)
     * `:led_path` - the path to the LED directories (defaults to `"/sys/class/leds"`)
     * `:hz` - the Linux kernel's `HZ` setting. Delux will adjust its timing based on this setting (defaults to 1000)
   * `:initial` - a program or a map of indicators to programs to run on initialization. If
@@ -221,6 +224,7 @@ defmodule Delux do
   @typedoc false
   @type state() :: %{
           indicator_names: [indicator_name()],
+          backend_module: module(),
           backend: %{indicator_name() => Backend.state()},
           slot_to_priority: %{slot() => non_neg_integer()},
           brightness: 0..100,
@@ -231,15 +235,17 @@ defmodule Delux do
 
   @impl GenServer
   def init(options) do
+    backend_config = merge(@default_backend_config, options[:backend] || [])
+    backend_module = backend_config[:module]
     slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
-    backend_config = options[:backend] || []
     initial = options[:initial]
 
     state =
       %{
         indicator_names: Map.keys(indicator_configs),
-        backend: open_indicators(backend_config, indicator_configs),
+        backend_module: backend_module,
+        backend: open_indicators(backend_module, backend_config, indicator_configs),
         slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
         active: [],
         brightness: 100,
@@ -251,6 +257,10 @@ defmodule Delux do
 
     {:ok, state}
   end
+
+  defp merge(kv1, kv2) when is_list(kv1), do: merge(Map.new(kv1), kv2)
+  defp merge(kv1, kv2) when is_list(kv2), do: merge(kv1, Map.new(kv2))
+  defp merge(kv1, kv2) when is_map(kv1) and is_map(kv2), do: Map.merge(kv1, kv2)
 
   @impl GenServer
   def handle_call({:render, slot, indicators}, _from, state) do
@@ -461,9 +471,10 @@ defmodule Delux do
         # Different entry than what's currently running
         {_priority, start_time, _indicator, program} = entry
         indicator_state = state.backend[indicator_name]
-        compiled = Backend.compile(indicator_state, program, state.brightness)
+        backend_module = state.backend_module
+        compiled = backend_module.compile(indicator_state, program, state.brightness)
 
-        time_left = Backend.run(indicator_state, compiled, start_time - current_time)
+        time_left = backend_module.run(indicator_state, compiled, start_time - current_time)
 
         cond do
           time_left <= 0 ->
@@ -496,11 +507,11 @@ defmodule Delux do
     {:noreply, refresh_indicators(state)}
   end
 
-  defp open_indicators(backend_config, indicator_configs) do
+  defp open_indicators(backend_module, backend_config, indicator_configs) do
     for {name, config} <- indicator_configs, reduce: %{} do
       acc ->
         combined_config = Map.merge(Map.new(backend_config), Map.new(config))
-        Map.put(acc, name, Backend.open(combined_config))
+        Map.put(acc, name, backend_module.open(combined_config))
     end
   end
 end
