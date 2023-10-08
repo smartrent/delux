@@ -121,7 +121,8 @@ start itself by specifying an application config can be really convenient, but
 adding `Delux` to your supervision tree allows runtime configuration and more
 control over failure recovery.
 
-Starting with the supervision tree approach, here's an example childspec:
+Starting with the supervision tree approach, here's an example child
+specification:
 
 ```elixir
   {Delux,
