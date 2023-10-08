@@ -1,15 +1,15 @@
-defmodule Delux.BackendTest do
+defmodule Delux.Backend.PatternTrigger.Test do
   use ExUnit.Case, async: true
 
-  alias Delux.Backend
+  alias Delux.Backend.PatternTrigger
   alias Delux.Effects
   alias Delux.Support.FakeLEDs
 
-  doctest Backend
+  doctest PatternTrigger
 
   defp compile_and_run(state, program, percent, expected_duration) do
-    compiled = Backend.compile(state, program, percent)
-    duration = Backend.run(state, compiled, 0)
+    compiled = PatternTrigger.compile(state, program, percent)
+    duration = PatternTrigger.run(state, compiled, 0)
 
     assert duration == expected_duration, "Program #{inspect(program)} had unexpected duration"
 
@@ -20,9 +20,9 @@ defmodule Delux.BackendTest do
   test "correctly writes to led files", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    Backend.open(led_path: led_dir, hz: 0, red: "led0", green: "led1", blue: "led2")
+    PatternTrigger.open(led_path: led_dir, hz: 0, red: "led0", green: "led1", blue: "led2")
     |> compile_and_run(Delux.Effects.blink(:red, 5), 100, :infinity)
-    |> Backend.close()
+    |> PatternTrigger.close()
 
     assert FakeLEDs.read_trigger(0) == "pattern"
     assert FakeLEDs.read_trigger(1) == "pattern"
@@ -38,9 +38,9 @@ defmodule Delux.BackendTest do
     FakeLEDs.create_leds(led_dir, 255)
 
     # Only configure a green LED, but run a blinking white program
-    Backend.open(led_path: led_dir, hz: 0, green: "led0")
+    PatternTrigger.open(led_path: led_dir, hz: 0, green: "led0")
     |> compile_and_run(Delux.Effects.blink(:white, 1), 100, :infinity)
-    |> Backend.close()
+    |> PatternTrigger.close()
 
     # Verify that only "led0" is configured and written
     assert FakeLEDs.read_trigger(0) == "pattern"
@@ -56,20 +56,20 @@ defmodule Delux.BackendTest do
   test "calculates duration of non-repeating patterns", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    state = Backend.open(led_path: led_dir, green: "led0")
+    state = PatternTrigger.open(led_path: led_dir, green: "led0")
 
     compile_and_run(state, Delux.Effects.blip(:green, :green), 100, 40)
 
-    Backend.close(state)
+    PatternTrigger.close(state)
   end
 
   @tag :tmp_dir
   test "specifying hz", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    Backend.open(led_path: led_dir, hz: 100, red: "led0", green: "led1", blue: "led2")
+    PatternTrigger.open(led_path: led_dir, hz: 100, red: "led0", green: "led1", blue: "led2")
     |> compile_and_run(Delux.Effects.blink(:red, 5), 100, :infinity)
-    |> Backend.close()
+    |> PatternTrigger.close()
 
     assert FakeLEDs.read_trigger(0) == "pattern"
     assert FakeLEDs.read_trigger(1) == "pattern"
@@ -84,9 +84,9 @@ defmodule Delux.BackendTest do
   test "default hz adjusts for 1000 hz", %{tmp_dir: led_dir} do
     FakeLEDs.create_leds(led_dir, 255)
 
-    Backend.open(led_path: led_dir, red: "led0", green: "led1", blue: "led2")
+    PatternTrigger.open(led_path: led_dir, red: "led0", green: "led1", blue: "led2")
     |> compile_and_run(Delux.Effects.blink(:red, 5), 100, :infinity)
-    |> Backend.close()
+    |> PatternTrigger.close()
 
     assert FakeLEDs.read_trigger(0) == "pattern"
     assert FakeLEDs.read_trigger(1) == "pattern"
@@ -109,7 +109,7 @@ defmodule Delux.BackendTest do
   end
 
   defp pattern_to_binary(pattern, brightness \\ 1) do
-    {iodata, _duration} = Backend.pattern_to_iodata(pattern, brightness, fn x -> {x, x} end)
+    {iodata, _duration} = PatternTrigger.pattern_to_iodata(pattern, brightness, fn x -> {x, x} end)
     IO.iodata_to_binary(iodata)
   end
 
@@ -132,7 +132,7 @@ defmodule Delux.BackendTest do
     measured
     |> Enum.with_index()
     |> Enum.each(fn {result, input} ->
-      assert Backend.hz_comp_1000(input) == result
+      assert PatternTrigger.hz_comp_1000(input) == result
     end)
   end
 
@@ -156,7 +156,7 @@ defmodule Delux.BackendTest do
     guessed
     |> Enum.with_index()
     |> Enum.each(fn {result, input} ->
-      assert Backend.hz_comp_300(input) == result
+      assert PatternTrigger.hz_comp_300(input) == result
     end)
   end
 
@@ -190,7 +190,7 @@ defmodule Delux.BackendTest do
     measured
     |> Enum.with_index()
     |> Enum.each(fn {result, input} ->
-      assert Backend.hz_comp_250(input) == result
+      assert PatternTrigger.hz_comp_250(input) == result
     end)
   end
 
@@ -238,7 +238,7 @@ defmodule Delux.BackendTest do
     measured
     |> Enum.with_index()
     |> Enum.each(fn {result, input} ->
-      assert Backend.hz_comp_100(input) == result
+      assert PatternTrigger.hz_comp_100(input) == result
     end)
   end
 end
