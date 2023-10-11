@@ -40,7 +40,8 @@ defmodule Delux.MixProject do
     [
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
       {:dialyxir, "~> 1.1", only: :test, runtime: false},
-      {:credo, "~> 1.5", only: :test, runtime: false}
+      {:credo, "~> 1.5", only: :test, runtime: false},
+      {:extrace, "> 0.0.0", only: :dev}
     ]
   end
 
