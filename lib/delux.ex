@@ -50,6 +50,7 @@ defmodule Delux do
   color that's close or just choose `:red`.
   """
   @type indicator_config() :: %{
+          :backend => module(),
           optional(:red) => String.t(),
           optional(:green) => String.t(),
           optional(:blue) => String.t()
@@ -258,7 +259,6 @@ defmodule Delux do
     {:ok, state}
   end
 
-  defp merge(kv1, kv2) when is_list(kv1), do: merge(Map.new(kv1), kv2)
   defp merge(kv1, kv2) when is_list(kv2), do: merge(kv1, Map.new(kv2))
   defp merge(kv1, kv2) when is_map(kv1) and is_map(kv2), do: Map.merge(kv1, kv2)
 

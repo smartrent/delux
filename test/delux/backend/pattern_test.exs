@@ -109,7 +109,9 @@ defmodule Delux.Backend.PatternTrigger.Test do
   end
 
   defp pattern_to_binary(pattern, brightness \\ 1) do
-    {iodata, _duration} = PatternTrigger.pattern_to_iodata(pattern, brightness, fn x -> {x, x} end)
+    {iodata, _duration} =
+      PatternTrigger.pattern_to_iodata(pattern, brightness, fn x -> {x, x} end)
+
     IO.iodata_to_binary(iodata)
   end
 
