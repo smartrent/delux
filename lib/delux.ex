@@ -11,7 +11,7 @@ defmodule Delux do
 
   require Logger
 
-  @default_backend_config [module: Delux.Backend.PatternTrigger]
+  @default_backend_config %{module: Delux.Backend.PatternTrigger}
 
   @default_slot :status
   @default_slots [:status, :notification, :user_feedback]
@@ -235,7 +235,8 @@ defmodule Delux do
 
   @impl GenServer
   def init(options) do
-    backend_config = Keyword.merge(@default_backend_config, options[:backend] || [])
+    backend_config = merge(@default_backend_config, options[:backend] || [])
+    backend_module = backend_config[:module]
     slots = options[:slots] || options[:priorities] || @default_slots
     indicator_configs = options[:indicators] || @default_indicator_config
     initial = options[:initial]
@@ -243,8 +244,8 @@ defmodule Delux do
     state =
       %{
         indicator_names: Map.keys(indicator_configs),
-        backend_module: backend_config[:module],
-        backend: open_indicators(backend_config, indicator_configs),
+        backend_module: backend_module,
+        backend: open_indicators(backend_module, backend_config, indicator_configs),
         slot_to_priority: slots |> Enum.reverse() |> Enum.with_index() |> Map.new(),
         active: [],
         brightness: 100,
@@ -256,6 +257,10 @@ defmodule Delux do
 
     {:ok, state}
   end
+
+  defp merge(kv1, kv2) when is_list(kv1), do: merge(Map.new(kv1), kv2)
+  defp merge(kv1, kv2) when is_list(kv2), do: merge(kv1, Map.new(kv2))
+  defp merge(kv1, kv2) when is_map(kv1) and is_map(kv2), do: Map.merge(kv1, kv2)
 
   @impl GenServer
   def handle_call({:render, slot, indicators}, _from, state) do
@@ -502,9 +507,7 @@ defmodule Delux do
     {:noreply, refresh_indicators(state)}
   end
 
-  defp open_indicators(backend_config, indicator_configs) do
-    backend_module = backend_config[:module]
-
+  defp open_indicators(backend_module, backend_config, indicator_configs) do
     for {name, config} <- indicator_configs, reduce: %{} do
       acc ->
         combined_config = Map.merge(Map.new(backend_config), Map.new(config))
