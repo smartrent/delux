@@ -4,6 +4,8 @@ defmodule Delux.Backend.AsciiArtServer do
   """
   use GenServer
 
+  alias Delux.RGB
+
   @ansi_push_state "\e[s"
   @ansi_pop_state "\e[u"
   @ansi_move_upper_left "\e[1;1H"
@@ -49,7 +51,8 @@ defmodule Delux.Backend.AsciiArtServer do
       state.indicators
       |> Enum.sort()
       |> Enum.map(&render_one/1)
-      |> Enum.intersperse([IO.ANSI.reset(), " | "])
+      |> Enum.intersperse([:reset, " | "])
+      |> IO.ANSI.format()
 
     IO.write(state.gl, [
       @ansi_push_state,
@@ -62,15 +65,6 @@ defmodule Delux.Backend.AsciiArtServer do
   end
 
   defp render_one({name, rgb}) do
-    [ansi(rgb), to_string(name)]
+    [RGB.ansi(rgb), to_string(name)]
   end
-
-  defp ansi({0, 0, 0}), do: IO.ANSI.black()
-  defp ansi({0, 0, 1}), do: IO.ANSI.light_blue()
-  defp ansi({0, 1, 0}), do: IO.ANSI.light_green()
-  defp ansi({0, 1, 1}), do: IO.ANSI.light_cyan()
-  defp ansi({1, 0, 0}), do: IO.ANSI.light_red()
-  defp ansi({1, 0, 1}), do: IO.ANSI.light_magenta()
-  defp ansi({1, 1, 0}), do: IO.ANSI.light_yellow()
-  defp ansi({1, 1, 1}), do: IO.ANSI.white()
 end

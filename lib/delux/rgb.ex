@@ -57,22 +57,42 @@ defmodule Delux.RGB do
   iex> RGB.to_ansidata(:red, "This is ")
   [:red, "This is ", "red"]
   iex> RGB.to_ansidata({0, 0.5, 1}, "This is ")
-  ["This is ", "{0, 0.5, 1}"]
+  [[], "This is ", "RGB{0,0.5,1}"]
   ```
   """
   @spec to_ansidata(color(), String.t()) :: IO.ANSI.ansidata()
-  def to_ansidata(color, prefix \\ "")
+  def to_ansidata(color, prefix \\ "") do
+    [ansi(color), prefix, name(color)]
+  end
 
-  def to_ansidata(:off, prefix), do: [:reverse, prefix, "off"]
-  def to_ansidata(:black, prefix), do: [:reverse, prefix, "black"]
-  def to_ansidata(:red, prefix), do: [:red, prefix, "red"]
-  def to_ansidata(:green, prefix), do: [:green, prefix, "green"]
-  def to_ansidata(:blue, prefix), do: [:blue, prefix, "blue"]
-  def to_ansidata(:cyan, prefix), do: [:cyan, prefix, "cyan"]
-  def to_ansidata(:magenta, prefix), do: [:magenta, prefix, "magenta"]
-  def to_ansidata(:yellow, prefix), do: [:yellow, prefix, "yellow"]
-  def to_ansidata(:white, prefix), do: [:white, prefix, "white"]
-  def to_ansidata(:on, prefix), do: [:white, prefix, "on"]
-  def to_ansidata(v, prefix) when is_atom(v), do: [prefix, to_string(v)]
-  def to_ansidata(v, prefix), do: [prefix, inspect(v)]
+  @doc """
+  Return a string name for the color
+
+  The name returned is the straightforward conversion. There are no smarts for
+  normalizing color names.
+  """
+  @spec name(color()) :: String.t()
+  def name(v) when is_atom(v), do: Atom.to_string(v)
+  def name({r, g, b}), do: "RGB{#{r},#{g},#{b}}"
+
+  @doc """
+  Convert a color to an ansidata atom
+
+  The conversion is best effort due to the limited set of color atoms. If
+  there's not a direct conversion, `ansi/1` returns `[]` which will result in
+  nothing getting changed when the ansidata gets flattened.
+  """
+  @spec ansi(color()) :: IO.ANSI.ansicode() | []
+  def ansi(v) when v in [:black, :red, :green, :blue, :cyan, :magenta, :yellow, :white], do: v
+  def ansi(:off), do: :black
+  def ansi(:on), do: :white
+  def ansi({0, 0, 0}), do: :black
+  def ansi({0, 0, 1}), do: :light_blue
+  def ansi({0, 1, 0}), do: :light_green
+  def ansi({0, 1, 1}), do: :light_cyan
+  def ansi({1, 0, 0}), do: :light_red
+  def ansi({1, 0, 1}), do: :light_magenta
+  def ansi({1, 1, 0}), do: :light_yellow
+  def ansi({1, 1, 1}), do: :white
+  def ansi(_), do: []
 end

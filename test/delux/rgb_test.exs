@@ -38,8 +38,8 @@ defmodule Delux.RGBTest do
     test "color tuples" do
       ansidata = RGB.to_ansidata({0, 0.5, 0})
 
-      assert ansidata_to_binary(ansidata, false) == "{0, 0.5, 0}"
-      assert ansidata_to_binary(ansidata, true) == "{0, 0.5, 0}"
+      assert ansidata_to_binary(ansidata, false) == "RGB{0,0.5,0}"
+      assert ansidata_to_binary(ansidata, true) == "RGB{0,0.5,0}"
     end
   end
 
