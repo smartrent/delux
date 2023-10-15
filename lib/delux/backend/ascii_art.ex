@@ -4,7 +4,7 @@ defmodule Delux.Backend.AsciiArt do
   """
   @behaviour Delux.Backend
 
-  alias Delux.Backend.AsciiArtServer
+  alias Delux.Backend.AsciiArtIndicator
   alias Delux.Backend
   alias Delux.Program
 
@@ -17,13 +17,14 @@ defmodule Delux.Backend.AsciiArt do
   Open and prep file handles for writing patterns
 
   Options:
+  * `:name` - the indicator's name
   * `:red` - the name of the red LED if it exists
   * `:green` - the name of the green LED if it exists
   * `:blue` - the name of the blue LED if it exists
   """
   @impl Backend
   def open(options) do
-    {:ok, pid} = AsciiArtServer.start_link(options)
+    {:ok, pid} = AsciiArtIndicator.start_link(options)
     %__MODULE__{pid: pid}
   end
 
@@ -44,7 +45,7 @@ defmodule Delux.Backend.AsciiArt do
   """
   @impl Backend
   def run(%__MODULE__{} = state, compiled, _time_offset) do
-    AsciiArtServer.run(state.pid, compiled)
+    AsciiArtIndicator.run(state.pid, compiled)
     :infinity
   end
 
