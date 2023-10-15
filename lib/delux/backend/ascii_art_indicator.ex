@@ -1,4 +1,7 @@
 defmodule Delux.Backend.AsciiArtIndicator do
+  @moduledoc """
+  Program runner for one ASCII art indicator
+  """
   use GenServer
   alias Delux.Backend.AsciiArtServer
 
@@ -14,13 +17,13 @@ defmodule Delux.Backend.AsciiArtIndicator do
     GenServer.stop(server)
   end
 
+  @spec run(GenServer.server(), Delux.Pattern.t()) :: :ok
   def run(server, pattern) do
     GenServer.call(server, {:run, pattern})
   end
 
   @impl GenServer
   def init(opts) do
-    dbg(opts)
     {:ok, _ref} = :timer.send_interval(100, :tick)
     {:ok, %__MODULE__{name: opts[:name] || "#{inspect(self())}", gl: opts[:gl]}}
   end

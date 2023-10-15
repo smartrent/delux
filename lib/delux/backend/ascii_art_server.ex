@@ -1,4 +1,7 @@
 defmodule Delux.Backend.AsciiArtServer do
+  @moduledoc """
+  Renderer for all ASCII Art indicators
+  """
   use GenServer
 
   @ansi_push_state "\e[s"
@@ -17,6 +20,7 @@ defmodule Delux.Backend.AsciiArtServer do
     GenServer.stop(server)
   end
 
+  @spec update(atom() | String.t(), tuple()) :: :ok
   def update(indicator_name, rgb) do
     GenServer.call(__MODULE__, {:update, indicator_name, rgb})
   end
@@ -55,8 +59,6 @@ defmodule Delux.Backend.AsciiArtServer do
       IO.ANSI.reset(),
       @ansi_pop_state
     ])
-
-    state
   end
 
   defp render_one({name, rgb}) do

@@ -4,8 +4,8 @@ defmodule Delux.Backend.AsciiArt do
   """
   @behaviour Delux.Backend
 
-  alias Delux.Backend.AsciiArtIndicator
   alias Delux.Backend
+  alias Delux.Backend.AsciiArtIndicator
   alias Delux.Program
 
   defstruct [:pid]
