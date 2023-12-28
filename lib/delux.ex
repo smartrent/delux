@@ -50,6 +50,7 @@ defmodule Delux do
   color that's close or just choose `:red`.
   """
   @type indicator_config() :: %{
+          :backend => module(),
           optional(:red) => String.t(),
           optional(:green) => String.t(),
           optional(:blue) => String.t()
