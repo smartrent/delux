@@ -15,14 +15,7 @@ defmodule Delux.MixProject do
       package: package(),
       docs: docs(),
       dialyzer: dialyzer(),
-      deps: deps(),
-      preferred_cli_env: %{
-        docs: :docs,
-        "hex.build": :docs,
-        "hex.publish": :docs,
-        credo: :test,
-        dialyzer: :test
-      }
+      deps: deps()
     ]
   end
 
@@ -33,6 +26,18 @@ defmodule Delux.MixProject do
     [
       extra_applications: [:logger],
       mod: {Delux.Application, []}
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: %{
+        dialyzer: :test,
+        docs: :docs,
+        "hex.build": :docs,
+        "hex.publish": :docs,
+        credo: :test
+      }
     ]
   end
 
