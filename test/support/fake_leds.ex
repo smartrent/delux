@@ -46,22 +46,11 @@ defmodule Delux.Support.FakeLEDs do
     binread(handle)
   end
 
-  if Version.match?(System.version(), "~> 1.13") do
-    defp binread(handle) do
-      case IO.binread(handle, :eof) do
-        :eof -> :eof
-        {:error, _} = error -> error
-        data -> IO.iodata_to_binary(data)
-      end
-    end
-  else
-    # Elixir 1.12 and earlier use :all and return empty strings
-    defp binread(handle) do
-      case IO.binread(handle, :all) do
-        "" -> :eof
-        {:error, _} = error -> error
-        data -> IO.iodata_to_binary(data)
-      end
+  defp binread(handle) do
+    case IO.binread(handle, :eof) do
+      :eof -> :eof
+      {:error, _} = error -> error
+      data -> IO.iodata_to_binary(data)
     end
   end
 end
