@@ -153,6 +153,23 @@ config :delux,
    }}
 ```
 
+For advanced configurations involving device tree overlays for GPIO-controlled LEDs, you can specify the overlays path and pins in the config.exs as follows:
+
+``` elixir
+config :delux, :dt_overlays,
+  overlays_path: "/data/gpio-led.dtbo",
+  pins: [
+    {"rgb-red0", 12},
+    {"rgb-green0", 16},
+    {"rgb-blue0", 21},
+    {"rgb-red1", 24},
+    {"rgb-green1", 25},
+    {"rgb-blue1", 1}
+  ]
+```
+
+This configuration is useful for specifying custom GPIO pins for LED indicators allowing for more flexibility in custom hardware setups. This has only been tested on an rpi0 at this time.
+
 ## Use
 
 For sake of example, let's start the `Delux` GenServer the manual way by calling
